@@ -5,8 +5,8 @@ import { QuillBinding } from "y-quill";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { Awareness } from "y-protocols/awareness";
-import io from "socket.io-client";
 import "quill/dist/quill.snow.css";
+import axios from "axios";
 
 function Document() {
     const { id } = useParams();
@@ -16,47 +16,45 @@ function Document() {
     const providerRef = useRef(null);
 
     useEffect(() => {
-        // Инициализация Y.js
+        console.log(`Initializing Y.Doc for document: ${id}`);
         const ydoc = new Y.Doc();
         ydocRef.current = ydoc;
         const ytext = ydoc.getText("content");
 
-        // Подключение к WebSocket
-        const socket = io("http://localhost:5000", {
-            transports: ["websocket"],
-            withCredentials: true,
-        });
-
-        socket.on("connect", () => {
-            console.log("Socket.io connected:", socket.id);
-        });
-        socket.on("connect_error", (error) => {
-            console.error("Socket.io connection error:", error);
-        });
-
-        const provider = new WebsocketProvider("collabdocs", `document:${id}`, socket, {
+        console.log("Setting up WebsocketProvider");
+        const provider = new WebsocketProvider(`ws://localhost:1234`, `document:${id}`, ydoc, {
+            connect: true,
             awareness: new Awareness(ydoc),
+            params: { docName: `document:${id}` },
         });
         providerRef.current = provider;
 
         provider.on("status", (event) => {
-            console.log("WebsocketProvider status:", event.status); // Лог статуса
+            console.log("WebsocketProvider status:", event.status);
         });
 
-        // Инициализация Quill
+        provider.on("sync", (isSynced) => {
+            console.log("WebsocketProvider sync:", isSynced);
+        });
+
+        provider.on("error", (error) => {
+            console.error("WebsocketProvider error:", error);
+        });
+
+        console.log("Initializing Quill");
         const quill = new Quill(editorRef.current, {
             theme: "snow",
             modules: {
                 toolbar: [[{ header: [1, 2, false] }], ["bold", "italic", "underline"], ["link"], [{ list: "ordered" }, { list: "bullet" }]],
-                cursors: true, // Включаем поддержку курсоров
+                cursors: true,
             },
         });
         quillRef.current = quill;
 
-        // Привязка Quill к Y.js
+        console.log("Binding Quill to Y.js");
         const binding = new QuillBinding(ytext, quill, provider.awareness);
 
-        // Настройка курсоров через awareness
+        console.log("Setting up awareness");
         provider.awareness.setLocalStateField("user", {
             name: localStorage.getItem("username") || "Anonymous",
             color: "#" + Math.floor(Math.random() * 16777215).toString(16),
@@ -66,19 +64,31 @@ function Document() {
             console.log("Awareness updated:", provider.awareness.getStates());
         });
 
-        // Сохранение содержимого в базе (раз в 5 секунд)
-        const saveInterval = setInterval(() => {
+        const saveInterval = setInterval(async () => {
             const content = quill.getText();
             if (content.trim()) {
                 console.log("Saving content:", content);
-                // В будущем: отправить content на сервер через PUT /documents/:id
+                try {
+                    await axios.put(
+                        `http://localhost:5000/documents/${id}`,
+                        { title: quill.getLength() > 1 ? quill.getText(0, 30) : "Untitled", content },
+                        {
+                            headers: {
+                                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                            },
+                        }
+                    );
+                    console.log("Content saved to database");
+                } catch (error) {
+                    console.error("Error saving content:", error);
+                }
             }
         }, 5000);
 
         return () => {
+            console.log("Cleaning up Document component");
             clearInterval(saveInterval);
             provider.disconnect();
-            socket.disconnect();
             ydoc.destroy();
         };
     }, [id]);

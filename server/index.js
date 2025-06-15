@@ -222,11 +222,11 @@ app.post("/projects/:id/documents", passport.authenticate("jwt", { session: fals
 // Обновить документ (метаданные)
 app.put("/documents/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, content } = req.body;
     try {
         const { rows } = await pool.query(
-            "UPDATE documents SET title = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND owner_id = $3 RETURNING *",
-            [title, id, req.user.id]
+            "UPDATE documents SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND owner_id = $4 RETURNING *",
+            [title, content, id, req.user.id]
         );
         if (rows.length === 0) {
             return res.status(403).json({ error: "Not authorized or document not found" });
