@@ -6,6 +6,8 @@ import Login from "./components/Login";
 import User from "./components/User";
 import Home from "./components/Home";
 import Projects from "./components/Projects";
+import Project from "./components/Project";
+import Document from "./components/Document";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -19,8 +21,8 @@ function App() {
             if (newToken) {
                 try {
                     const decoded = jwtDecode(newToken);
-                    console.log("Decoded token:", decoded); // Лог для отладки
                     setUsername(decoded.username || "");
+                    localStorage.setItem("username", decoded.username || ""); // Для курсоров
                 } catch (error) {
                     console.error("Error decoding token:", error);
                     setUsername("");
@@ -29,6 +31,7 @@ function App() {
                 }
             } else {
                 setUsername("");
+                localStorage.removeItem("username");
             }
         };
 
@@ -81,6 +84,22 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <Projects />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/projects/:id"
+                            element={
+                                <PrivateRoute>
+                                    <Project />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/documents/:id"
+                            element={
+                                <PrivateRoute>
+                                    <Document />
                                 </PrivateRoute>
                             }
                         />
