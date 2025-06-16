@@ -9,13 +9,16 @@ const { Pool } = require("pg");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
+const Y = require("yjs"); // Импорт yjs
+const { encodeStateAsUpdate, applyUpdate } = require("yjs");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        credentials: true,
     },
 });
 
@@ -31,6 +34,7 @@ app.use(
     cors({
         origin: "http://localhost:3000",
         methods: ["GET", "POST", "PUT", "DELETE"],
+        credentials: true,
     })
 );
 app.use(express.json());
@@ -100,15 +104,13 @@ app.get("/user", passport.authenticate("jwt", { session: false }), (req, res) =>
     res.json({ username: req.user.username });
 });
 
-// --- Проекты ---
-
 // Получить проекты пользователя
 app.get("/projects", passport.authenticate("jwt", { session: false }), async (req, res) => {
     try {
         const { rows } = await pool.query(
             `SELECT p.* FROM projects p
-       LEFT JOIN project_permissions pp ON p.id = pp.project_id
-       WHERE p.owner_id = $1 OR pp.user_id = $1`,
+             LEFT JOIN project_permissions pp ON p.id = pp.project_id
+             WHERE p.owner_id = $1 OR pp.user_id = $1`,
             [req.user.id]
         );
         res.json(rows);
@@ -171,19 +173,10 @@ app.delete("/projects/:id", passport.authenticate("jwt", { session: false }), as
     }
 });
 
-// --- Документы ---
-
 // Получить документы проекта
 app.get("/projects/:id/documents", passport.authenticate("jwt", { session: false }), async (req, res) => {
     const { id } = req.params;
     try {
-        const { rows: perms } = await pool.query("SELECT * FROM project_permissions WHERE project_id = $1 AND user_id = $2", [id, req.user.id]);
-        if (perms.length === 0) {
-            const { rows: project } = await pool.query("SELECT * FROM projects WHERE id = $1 AND owner_id = $2", [id, req.user.id]);
-            if (project.length === 0) {
-                return res.status(403).json({ error: "Not authorized or project not found" });
-            }
-        }
         const { rows } = await pool.query("SELECT * FROM documents WHERE project_id = $1", [id]);
         res.json(rows);
     } catch (error) {
@@ -196,15 +189,10 @@ app.get("/projects/:id/documents", passport.authenticate("jwt", { session: false
 app.post("/projects/:id/documents", passport.authenticate("jwt", { session: false }), async (req, res) => {
     const { id } = req.params;
     const { title } = req.body;
+    console.log("Received request body:", req.body); // Отладка
     try {
-        const { rows: perms } = await pool.query("SELECT * FROM project_permissions WHERE project_id = $1 AND user_id = $2 AND role IN ($3, $4)", [
-            id,
-            req.user.id,
-            "owner",
-            "editor",
-        ]);
-        if (perms.length === 0) {
-            return res.status(403).json({ error: "Not authorized to create documents" });
+        if (!title || typeof title !== "string") {
+            return res.status(400).json({ error: "Invalid data: title is required" });
         }
         const { rows } = await pool.query("INSERT INTO documents (project_id, title, owner_id, content) VALUES ($1, $2, $3, $4) RETURNING *", [
             id,
@@ -223,13 +211,15 @@ app.post("/projects/:id/documents", passport.authenticate("jwt", { session: fals
 app.put("/documents/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
     const { id } = req.params;
     const { title, content } = req.body;
+    console.log("Updating document:", { id, title, content }); // Отладка
     try {
-        const { rows } = await pool.query(
-            "UPDATE documents SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND owner_id = $4 RETURNING *",
-            [title, content, id, req.user.id]
-        );
+        const { rows } = await pool.query("UPDATE documents SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *", [
+            title,
+            content,
+            id,
+        ]);
         if (rows.length === 0) {
-            return res.status(403).json({ error: "Not authorized or document not found" });
+            return res.status(404).json({ error: "Document not found" });
         }
         res.json(rows[0]);
     } catch (error) {
@@ -253,12 +243,58 @@ app.delete("/documents/:id", passport.authenticate("jwt", { session: false }), a
     }
 });
 
-// Настройка WebSocket для socket.io (временная, без y-websocket)
+// WebSocket с yjs на едином порту
+const docs = new Map();
+
 io.on("connection", (socket) => {
     console.log("WebSocket client connected:", socket.id);
-    socket.on("disconnect", () => {
-        console.log("WebSocket client disconnected:", socket.id);
+
+    socket.on("joinDocument", (documentId) => {
+        console.log(`${socket.id} joined document: document_${documentId}`); // Явный уникальный ключ
+        let ydoc = docs.get(`document_${documentId}`); // Добавляем префикс для уникальности
+        if (!ydoc) {
+            ydoc = new Y.Doc();
+            docs.set(`document_${documentId}`, ydoc);
+            console.log(`Created new Y.Doc for document_${documentId}`);
+        }
+
+        // Отправляем текущее состояние
+        const state = encodeStateAsUpdate(ydoc);
+        socket.emit("documentSync", Array.from(state));
+
+        socket.on("documentUpdate", (update) => {
+            try {
+                const uintUpdate = new Uint8Array(update);
+                applyUpdate(ydoc, uintUpdate);
+                console.log(`Applied update to document_${documentId}`);
+                socket.broadcast.to(`document_${documentId}`).emit("documentUpdate", update); // Рассылка в комнате
+            } catch (error) {
+                console.error(`Error applying update to document_${documentId}:`, error);
+            }
+        });
+
+        socket.on("disconnect", () => {
+            console.log("WebSocket client disconnected:", socket.id);
+            if (io.sockets.adapter.rooms.get(`document_${documentId}`)?.size === 0) {
+                docs.delete(`document_${documentId}`);
+                ydoc.destroy();
+                console.log(`Destroyed Y.Doc for document_${documentId}`);
+            }
+        });
+
+        // Присоединяем сокет к комнате
+        socket.join(`document_${documentId}`);
     });
+});
+
+app.get("/projects/all", passport.authenticate("jwt", { session: false }), async (req, res) => {
+    try {
+        const { rows } = await pool.query("SELECT * FROM projects");
+        res.json(rows);
+    } catch (error) {
+        console.error("Fetch all projects error:", error);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 
 const PORT = process.env.PORT || 5000;

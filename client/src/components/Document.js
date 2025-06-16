@@ -1,102 +1,122 @@
-import { useEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import Quill from "quill";
 import { QuillBinding } from "y-quill";
 import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import { Awareness } from "y-protocols/awareness";
 import "quill/dist/quill.snow.css";
-import axios from "axios";
+import io from "socket.io-client";
 
 function Document() {
-    const { id } = useParams();
+    const { id } = useParams(); // documentId
     const editorRef = useRef(null);
     const quillRef = useRef(null);
     const ydocRef = useRef(null);
-    const providerRef = useRef(null);
+    const socketRef = useRef(null);
+    const isInitialized = useRef(false); // Флаг для отслеживания инициализации
 
-    useEffect(() => {
-        console.log(`Initializing Y.Doc for document: ${id}`);
-        const ydoc = new Y.Doc();
-        ydocRef.current = ydoc;
-        const ytext = ydoc.getText("content");
+    const initializeQuill = useCallback(() => {
+        // Очистка предыдущего состояния перед каждой инициализацией
+        if (quillRef.current) {
+            quillRef.current.off("text-change"); // Удаляем слушатели
+            quillRef.current = null;
+        }
+        if (ydocRef.current) {
+            ydocRef.current.destroy();
+            ydocRef.current = null;
+        }
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
 
-        console.log("Setting up WebsocketProvider");
-        const provider = new WebsocketProvider(`ws://localhost:1234`, `document:${id}`, ydoc, {
-            connect: true,
-            awareness: new Awareness(ydoc),
-            params: { docName: `document:${id}` },
-        });
-        providerRef.current = provider;
+        // Очистка DOM
+        if (editorRef.current) {
+            editorRef.current.innerHTML = "";
+            console.log("Cleared previous Quill instance for document:", id);
+        }
 
-        provider.on("status", (event) => {
-            console.log("WebsocketProvider status:", event.status);
-        });
+        // Инициализация только если ещё не выполнена
+        if (!isInitialized.current && editorRef.current) {
+            console.log("Initializing Quill for document:", id);
 
-        provider.on("sync", (isSynced) => {
-            console.log("WebsocketProvider sync:", isSynced);
-        });
+            const ydoc = new Y.Doc();
+            ydocRef.current = ydoc;
+            const ytext = ydoc.getText("content");
 
-        provider.on("error", (error) => {
-            console.error("WebsocketProvider error:", error);
-        });
+            const socket = io("http://localhost:5000", { withCredentials: true });
+            socketRef.current = socket;
 
-        console.log("Initializing Quill");
-        const quill = new Quill(editorRef.current, {
-            theme: "snow",
-            modules: {
-                toolbar: [[{ header: [1, 2, false] }], ["bold", "italic", "underline"], ["link"], [{ list: "ordered" }, { list: "bullet" }]],
-                cursors: true,
-            },
-        });
-        quillRef.current = quill;
+            socket.on("connect", () => {
+                console.log("Connected to server:", socket.id);
+                socket.emit("joinDocument", `document_${id}`);
+            });
 
-        console.log("Binding Quill to Y.js");
-        const binding = new QuillBinding(ytext, quill, provider.awareness);
+            socket.on("documentSync", (update) => {
+                Y.applyUpdate(ydoc, new Uint8Array(update));
+            });
 
-        console.log("Setting up awareness");
-        provider.awareness.setLocalStateField("user", {
-            name: localStorage.getItem("username") || "Anonymous",
-            color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-        });
+            socket.on("documentUpdate", (update) => {
+                Y.applyUpdate(ydoc, new Uint8Array(update));
+            });
 
-        provider.awareness.on("update", () => {
-            console.log("Awareness updated:", provider.awareness.getStates());
-        });
+            const quill = new Quill(editorRef.current, {
+                theme: "snow",
+                modules: {
+                    toolbar: [[{ header: [1, 2, false] }], ["bold", "italic", "underline"], ["link"], [{ list: "ordered" }, { list: "bullet" }]],
+                },
+            });
+            quillRef.current = quill;
 
-        const saveInterval = setInterval(async () => {
-            const content = quill.getText();
-            if (content.trim()) {
-                console.log("Saving content:", content);
-                try {
-                    await axios.put(
-                        `http://localhost:5000/documents/${id}`,
-                        { title: quill.getLength() > 1 ? quill.getText(0, 30) : "Untitled", content },
-                        {
-                            headers: {
-                                Authorization: `Bearer ${localStorage.getItem("token")}`,
-                            },
-                        }
-                    );
-                    console.log("Content saved to database");
-                } catch (error) {
-                    console.error("Error saving content:", error);
+            const binding = new QuillBinding(ytext, quill, new Awareness(ydoc));
+            const awareness = new Awareness(ydoc);
+            awareness.setLocalStateField("user", {
+                name: localStorage.getItem("username") || "Anonymous",
+                color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+            });
+
+            quill.on("text-change", (delta, oldDelta, source) => {
+                if (source === "user") {
+                    const update = Y.encodeStateAsUpdate(ydoc);
+                    socket.emit("documentUpdate", Array.from(update));
+                    console.log("Text changed, sending update for document:", id);
                 }
-            }
-        }, 5000);
+            });
 
+            isInitialized.current = true;
+        } else if (isInitialized.current) {
+            console.log("Quill already initialized, skipping for document:", id);
+        }
+    }, [id]); // Зависимость от id для синхронизации
+
+    useLayoutEffect(() => {
+        initializeQuill();
+
+        // Очистка при размонтировании
         return () => {
-            console.log("Cleaning up Document component");
-            clearInterval(saveInterval);
-            provider.disconnect();
-            ydoc.destroy();
+            if (quillRef.current) {
+                quillRef.current.off("text-change");
+                quillRef.current = null;
+            }
+            if (ydocRef.current) {
+                ydocRef.current.destroy();
+                ydocRef.current = null;
+            }
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+            if (editorRef.current) {
+                editorRef.current.innerHTML = "";
+            }
+            isInitialized.current = false;
         };
-    }, [id]);
+    }, [initializeQuill]);
 
     return (
-        <div className="container">
-            <h2>Document Editor</h2>
-            <div className="editor" ref={editorRef}></div>
+        <div>
+            <h2>Document Editor - ID: {id}</h2>
+            <div ref={editorRef}></div> {/* Только один div */}
         </div>
     );
 }
