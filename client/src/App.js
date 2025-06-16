@@ -9,6 +9,7 @@ import Projects from "./components/Projects";
 import Project from "./components/Project";
 import Document from "./components/Document";
 import PrivateRoute from "./components/PrivateRoute";
+import AllProjects from "./components/AllProjects";
 
 function App() {
     const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -68,6 +69,9 @@ function App() {
                                     <Link to="/projects">Projects</Link>
                                 </li>
                                 <li>
+                                    <Link to="/all-projects">All Projects</Link>
+                                </li>
+                                <li>
                                     <Link to="/user">User {username ? `(${username})` : ""}</Link>
                                 </li>
                             </>
@@ -108,6 +112,14 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <User />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/all-projects"
+                            element={
+                                <PrivateRoute>
+                                    <AllProjects />
                                 </PrivateRoute>
                             }
                         />
