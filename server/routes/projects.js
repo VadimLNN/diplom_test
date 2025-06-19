@@ -1,84 +1,112 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../config/database");
-const passport = require("../middleware/auth");
-const logger = require("../utils/logger");
+const pool = require("../db");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.get("/", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-        const { rows } = await pool.query(
-            `SELECT p.* FROM projects p
-             LEFT JOIN project_permissions pp ON p.id = pp.project_id
-             WHERE p.owner_id = $1 OR pp.user_id = $1`,
-            [req.user.id]
-        );
-        res.json(rows);
-    } catch (error) {
-        logger.error("Get projects error:", error);
-        res.status(500).json({ error: "Server error" });
-    }
-});
+router.use(authMiddleware);
 
-router.post("/", passport.authenticate("jwt", { session: false }), async (req, res) => {
+// CREATE - Создание нового проекта
+router.post("/", async (req, res) => {
     const { name, description } = req.body;
+
+    const ownerId = req.user.id;
+
+    if (!name) {
+        return res.status(400).json({ error: "Project name is required" });
+    }
+
     try {
-        if (!name) return res.status(400).json({ error: "Name is required" });
-        await pool.query("BEGIN");
-        const { rows } = await pool.query("INSERT INTO projects (name, description, owner_id) VALUES ($1, $2, $3) RETURNING *", [
+        const newProject = await pool.query("INSERT INTO projects (name, description, owner_id) VALUES ($1, $2, $3) RETURNING *", [
             name,
             description,
-            req.user.id,
+            ownerId,
         ]);
-        await pool.query("INSERT INTO project_permissions (user_id, project_id, role) VALUES ($1, $2, $3)", [req.user.id, rows[0].id, "owner"]);
-        await pool.query("COMMIT");
-        logger.info(`Project created: ${name} by ${req.user.username}`);
-        res.status(201).json(rows[0]);
+        res.status(201).json(newProject.rows[0]);
     } catch (error) {
-        await pool.query("ROLLBACK");
-        logger.error("Create project error:", error);
-        res.status(400).json({ error: "Invalid data" });
+        console.error("Create project error:", error.stack);
+        res.status(500).json({ error: "Failed to create project" });
     }
 });
 
-router.put("/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
-    const { id } = req.params;
-    const { name, description } = req.body;
+// READ - Получение всех проектов ТЕКУЩЕГО пользователя
+router.get("/", async (req, res) => {
+    const ownerId = req.user.id; // <-- ID пользователя для фильтрации
+
     try {
-        const { rows } = await pool.query("UPDATE projects SET name = $1, description = $2 WHERE id = $3 AND owner_id = $4 RETURNING *", [
+        // Добавляем `WHERE owner_id = $1`
+        const result = await pool.query("SELECT * FROM projects WHERE owner_id = $1 ORDER BY created_at DESC", [ownerId]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Get all projects error:", error.stack);
+        res.status(500).json({ error: "Failed to fetch projects" });
+    }
+});
+
+// READ - Получение одного проекта по ID (с проверкой владения)
+router.get("/:id", async (req, res) => {
+    const { id } = req.params;
+    const ownerId = req.user.id;
+
+    try {
+        const result = await pool.query("SELECT * FROM projects WHERE id = $1 AND owner_id = $2", [id, ownerId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Project not found or you do not have permission to view it" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(`Get project by id=${id} error:`, error.stack);
+        res.status(500).json({ error: "Failed to fetch project" });
+    }
+});
+
+// UPDATE - Обновление проекта по ID (с проверкой владения)
+router.put("/:id", async (req, res) => {
+    const { id } = req.params;
+    const ownerId = req.user.id;
+    const { name, description } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: "Project name is required" });
+    }
+
+    try {
+        const updatedProject = await pool.query("UPDATE projects SET name = $1, description = $2 WHERE id = $3 AND owner_id = $4 RETURNING *", [
             name,
             description,
             id,
-            req.user.id,
+            ownerId,
         ]);
-        if (rows.length === 0) return res.status(403).json({ error: "Not authorized or project not found" });
-        logger.info(`Project updated: ${id} by ${req.user.username}`);
-        res.json(rows[0]);
+
+        if (updatedProject.rowCount === 0) {
+            return res.status(404).json({ error: "Project not found or you do not have permission to edit it" });
+        }
+
+        res.json(updatedProject.rows[0]);
     } catch (error) {
-        logger.error("Update project error:", error);
-        res.status(400).json({ error: "Invalid data" });
+        console.error(`Update project id=${id} error:`, error.stack);
+        res.status(500).json({ error: "Failed to update project" });
     }
 });
 
-router.delete("/:id", passport.authenticate("jwt", { session: false }), async (req, res) => {
+// DELETE - Удаление проекта по ID (с проверкой владения)
+router.delete("/:id", async (req, res) => {
     const { id } = req.params;
-    try {
-        const { rows } = await pool.query("DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING id", [id, req.user.id]);
-        if (rows.length === 0) return res.status(403).json({ error: "Not authorized or project not found" });
-        logger.info(`Project deleted: ${id} by ${req.user.username}`);
-        res.json({ message: "Project deleted" });
-    } catch (error) {
-        logger.error("Delete project error:", error);
-        res.status(500).json({ error: "Server error" });
-    }
-});
+    const ownerId = req.user.id;
 
-router.get("/all", passport.authenticate("jwt", { session: false }), async (req, res) => {
     try {
-        const { rows } = await pool.query("SELECT * FROM projects");
-        res.json(rows);
+        const deleteOp = await pool.query("DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING *", [id, ownerId]);
+
+        if (deleteOp.rowCount === 0) {
+            return res.status(404).json({ error: "Project not found or you do not have permission to delete it" });
+        }
+
+        // Возвращаем сообщение об успехе. Можно вернуть и удаленный объект, если нужно.
+        res.status(200).json({ message: "Project deleted successfully" });
     } catch (error) {
-        logger.error("Fetch all projects error:", error);
-        res.status(500).json({ error: "Server error" });
+        console.error(`Delete project id=${id} error:`, error.stack);
+        res.status(500).json({ error: "Failed to delete project" });
     }
 });
 

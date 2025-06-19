@@ -1,94 +1,65 @@
-require("dotenv").config();
+// server.js
+
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const compression = require("compression");
-const pool = require("./config/database");
-const passport = require("./middleware/auth");
-const authRoutes = require("./routes/auth");
-const projectRoutes = require("./routes/projects");
-const documentRoutes = require("./routes/documents");
-const logger = require("./utils/logger");
-const cors = require("cors"); // Добавлен импорт cors
-const Y = require("yjs");
-const { encodeStateAsUpdate, applyUpdate } = require("yjs");
+const http = require("http"); // 1. Импортируем встроенный модуль http
+const { Server } = require("socket.io"); // 2. Импортируем Server из socket.io
+const cors = require("cors");
+const passport = require("./config/passport");
 
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer(app); // 3. Создаем HTTP сервер на основе Express приложения
+
+// 4. Настраиваем CORS для Socket.IO (отдельно от Express)
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true,
+        origin: "http://localhost:3000", // Адрес вашего React-приложения
+        methods: ["GET", "POST"],
     },
 });
 
-app.use(compression()); // Сжатие Gzip
+// --- Ваша текущая конфигурация Express остается без изменений ---
 app.use(express.json());
 app.use(
     cors({
         origin: "http://localhost:3000",
-        methods: ["GET", "POST", "PUT", "DELETE"],
         credentials: true,
+        exposedHeaders: ["Authorization"],
     })
-); // Используем импортированный cors
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/documents", documentRoutes);
+);
+app.use(passport.initialize());
 
-const docs = new Map();
+// --- Ваши роуты остаются без изменений ---
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/projects", require("./routes/projects"));
+app.use("/api/documents", require("./routes/documents"));
+// Добавляем роуты для приглашений (код для них ниже)
+app.use("/api/projects/:projectId/permissions", require("./routes/permissions"));
 
+// --- 5. Логика обработки WebSocket соединений ---
 io.on("connection", (socket) => {
-    logger.info(`WebSocket client connected: ${socket.id}`);
+    console.log("✅ User connected via WebSocket:", socket.id);
 
-    socket.on("joinDocument", (documentId) => {
-        const room = `document_${documentId}`;
-        logger.info(`${socket.id} joined document: ${room}`);
-        let ydoc = docs.get(room);
-        if (!ydoc) {
-            ydoc = new Y.Doc();
-            docs.set(room, ydoc);
-            logger.info(`Created new Y.Doc for ${room}`);
-        }
+    // Событие: пользователь открыл документ и готов к редактированию
+    socket.on("join_document", (documentId) => {
+        socket.join(documentId);
+        console.log(`User ${socket.id} joined room for document ${documentId}`);
+    });
 
-        const state = encodeStateAsUpdate(ydoc);
-        socket.emit("documentSync", Array.from(state));
+    // Событие: пользователь изменил контент документа
+    socket.on("document_change", (data) => {
+        const { documentId, newContent } = data;
+        // Отправляем изменения всем в "комнате" этого документа, КРОМЕ отправителя
+        socket.to(documentId).emit("receive_document_change", newContent);
+    });
 
-        socket.on("documentUpdate", (update) => {
-            try {
-                const uintUpdate = new Uint8Array(update);
-                applyUpdate(ydoc, uintUpdate);
-                logger.info(`Applied update to ${room}`);
-                socket.broadcast.to(room).emit("documentUpdate", update);
-            } catch (error) {
-                logger.error(`Error applying update to ${room}:`, error);
-            }
-        });
-
-        socket.on("disconnect", () => {
-            logger.info(`WebSocket client disconnected: ${socket.id}`);
-            if (io.sockets.adapter.rooms.get(room)?.size === 0) {
-                docs.delete(room);
-                ydoc.destroy();
-                logger.info(`Destroyed Y.Doc for ${room}`);
-            }
-        });
-
-        socket.join(room);
+    socket.on("disconnect", () => {
+        console.log("❌ User disconnected:", socket.id);
     });
 });
 
+// --- 6. Запускаем сервер ---
 const PORT = process.env.PORT || 5000;
+// ВАЖНО: Теперь мы слушаем `server`, а не `app`
 server.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`);
-});
-
-process.on("uncaughtException", (error) => {
-    logger.error("Uncaught Exception:", error);
-    server.close(() => process.exit(1));
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-    logger.error("Unhandled Rejection at:", promise, "reason:", reason);
-    server.close(() => process.exit(1));
+    console.log(`🚀 Server with WebSocket support running on port ${PORT}`);
 });
