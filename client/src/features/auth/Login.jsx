@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../shared/api/axios";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
@@ -11,8 +11,8 @@ function Login() {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
-            console.log("Token found, redirecting to /user");
-            navigate("/user");
+            console.log("Token found in localStorage:", token);
+            navigate("/projects");
         }
     }, [navigate]);
 
@@ -20,15 +20,19 @@ function Login() {
         e.preventDefault();
         console.log("Submitting login with:", { username, password });
         try {
-            const response = await axios.post("http://localhost:5000/api/auth/login", {
+            const response = await api.post("/auth/login", {
                 username,
                 password,
             });
-            console.log("Login response:", response.data);
+            console.log("Login response (full):", response.data); // Детальный лог
+            if (!response.data.token) {
+                throw new Error("Token not received from server");
+            }
             localStorage.setItem("token", response.data.token);
+            console.log("Token saved to localStorage:", response.data.token);
             setMessage("Login successful");
             window.dispatchEvent(new Event("authChange"));
-            navigate("/user");
+            navigate("/projects");
         } catch (error) {
             console.error("Login error:", error.response?.data || error.message);
             setMessage(error.response?.data?.error || "Login failed");
