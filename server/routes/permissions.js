@@ -57,21 +57,35 @@ router.post("/", isOwner, async (req, res) => {
 });
 
 // GET /api/projects/:projectId/members - Получить список участников
-router.get("/members", async (req, res) => {
-    // Здесь проверку isOwner можно ослабить, чтобы все участники видели друг друга
+router.get("/", async (req, res) => {
+    // Этот роут должен быть доступен всем участникам проекта, не только владельцу
+    // TODO: Добавить проверку checkProjectAccess
     const { projectId } = req.params;
-    const result = await pool.query(
-        "SELECT u.id, u.username, u.email, pp.role FROM users u JOIN project_permissions pp ON u.id = pp.user_id WHERE pp.project_id = $1",
-        [projectId]
-    );
-    res.json(result.rows);
+    try {
+        const result = await pool.query(
+            `SELECT u.id, u.username, u.email, pp.role 
+             FROM users u 
+             JOIN project_permissions pp ON u.id = pp.user_id 
+             WHERE pp.project_id = $1`,
+            [projectId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Failed to fetch project members:", error);
+        res.status(500).json({ error: "Failed to fetch project members" });
+    }
 });
 
 // DELETE /api/projects/:projectId/members/:userId - Удалить участника
-router.delete("/members/:userId", isOwner, async (req, res) => {
+router.delete("/:userId", isOwner, async (req, res) => {
     const { projectId, userId } = req.params;
-    await pool.query("DELETE FROM project_permissions WHERE project_id = $1 AND user_id = $2", [projectId, userId]);
-    res.status(200).json({ message: "User removed from project" });
+    try {
+        await pool.query("DELETE FROM project_permissions WHERE project_id = $1 AND user_id = $2", [projectId, userId]);
+        res.status(200).json({ message: "User removed from project" });
+    } catch (error) {
+        console.error("Failed to remove user:", error);
+        res.status(500).json({ error: "Failed to remove user" });
+    }
 });
 
 module.exports = router;

@@ -23,6 +23,7 @@ CREATE TABLE documents (
     title VARCHAR(100) NOT NULL,
     content TEXT, -- Markdown содержимое
     owner_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

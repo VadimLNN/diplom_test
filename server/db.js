@@ -54,4 +54,11 @@ pool.connect((err, client, done) => {
     }
 });
 
+pool.on("error", (err, client) => {
+    console.error("!!! UNEXPECTED ERROR ON IDLE CLIENT !!!", err);
+    process.exit(-1);
+});
+
+console.log("Database pool configured.");
+
 module.exports = pool;

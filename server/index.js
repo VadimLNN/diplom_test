@@ -4,7 +4,6 @@ const express = require("express");
 const http = require("http"); // 1. Импортируем встроенный модуль http
 const { Server } = require("socket.io"); // 2. Импортируем Server из socket.io
 const cors = require("cors");
-const passport = require("./config/passport");
 
 const app = express();
 const server = http.createServer(app); // 3. Создаем HTTP сервер на основе Express приложения
@@ -26,7 +25,6 @@ app.use(
         exposedHeaders: ["Authorization"],
     })
 );
-app.use(passport.initialize());
 
 // --- Ваши роуты остаются без изменений ---
 app.use("/api/auth", require("./routes/auth"));

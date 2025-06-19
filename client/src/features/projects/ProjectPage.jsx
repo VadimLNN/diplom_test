@@ -53,7 +53,10 @@ const ProjectPage = () => {
             return;
         }
         try {
-            const response = await api.post(`/documents/project/${projectId}`, { title: newDocumentTitle, content: "" });
+            const response = await api.post(
+                `/documents/project/${projectId}`,
+                { title: newDocumentTitle, content: "Start typing here..." } // Или просто " "
+            );
             setDocuments([...documents, response.data]);
             setNewDocumentTitle(""); // Очищаем поле ввода
         } catch (err) {

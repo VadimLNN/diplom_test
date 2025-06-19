@@ -9,7 +9,7 @@ const ProjectMembers = ({ projectId }) => {
 
     const fetchMembers = async () => {
         try {
-            const response = await api.get(`/projects/${projectId}/invitations/members`);
+            const response = await api.get(`/projects/${projectId}/permissions`);
             setMembers(response.data);
         } catch (err) {
             console.error(err);
@@ -26,7 +26,7 @@ const ProjectMembers = ({ projectId }) => {
         e.preventDefault();
         setError("");
         try {
-            await api.post(`/projects/${projectId}/invitations`, { email: inviteEmail, role: "editor" });
+            await api.post(`/projects/${projectId}/permissions`, { email: inviteEmail, role: "editor" });
             setInviteEmail("");
             fetchMembers(); // Обновляем список участников
         } catch (err) {
@@ -36,7 +36,7 @@ const ProjectMembers = ({ projectId }) => {
 
     const handleRemove = async (userId) => {
         try {
-            await api.delete(`/projects/${projectId}/invitations/members/${userId}`);
+            await api.delete(`/projects/${projectId}/permissions/${userId}`);
             fetchMembers(); // Обновляем список
         } catch (err) {
             console.error(err);

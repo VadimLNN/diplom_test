@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const authMiddleware = require("../middleware/authMiddleware");
+const checkProjectAccess = require("../middleware/checkProjectAccess");
 
 router.use(authMiddleware);
 
-// CREATE - Создание нового проекта
 router.post("/", async (req, res) => {
     const { name, description } = req.body;
 
@@ -28,32 +28,35 @@ router.post("/", async (req, res) => {
     }
 });
 
-// READ - Получение всех проектов ТЕКУЩЕГО пользователя
-router.get("/", async (req, res) => {
-    const ownerId = req.user.id; // <-- ID пользователя для фильтрации
+router.get("/", authMiddleware, async (req, res) => {
+    // Убедитесь, что используете ваш authMiddleware
+    const userId = req.user.id;
 
     try {
-        // Добавляем `WHERE owner_id = $1`
-        const result = await pool.query("SELECT * FROM projects WHERE owner_id = $1 ORDER BY created_at DESC", [ownerId]);
+        const query = `
+            SELECT DISTINCT p.*
+            FROM projects p
+            LEFT JOIN project_permissions pp ON p.id = pp.project_id
+            WHERE p.owner_id = $1 OR pp.user_id = $1
+            ORDER BY p.created_at DESC;
+        `;
+        const result = await pool.query(query, [userId]);
         res.json(result.rows);
     } catch (error) {
-        console.error("Get all projects error:", error.stack);
+        console.error("Get all user projects error:", error.stack);
         res.status(500).json({ error: "Failed to fetch projects" });
     }
 });
 
-// READ - Получение одного проекта по ID (с проверкой владения)
-router.get("/:id", async (req, res) => {
+const projectSpecificMiddlewares = [checkProjectAccess];
+
+router.get("/:id", projectSpecificMiddlewares, async (req, res) => {
     const { id } = req.params;
-    const ownerId = req.user.id;
-
     try {
-        const result = await pool.query("SELECT * FROM projects WHERE id = $1 AND owner_id = $2", [id, ownerId]);
-
+        const result = await pool.query("SELECT * FROM projects WHERE id = $1", [id]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Project not found or you do not have permission to view it" });
+            return res.status(404).json({ error: "Project not found." });
         }
-
         res.json(result.rows[0]);
     } catch (error) {
         console.error(`Get project by id=${id} error:`, error.stack);
@@ -61,28 +64,14 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// UPDATE - Обновление проекта по ID (с проверкой владения)
-router.put("/:id", async (req, res) => {
+router.put("/:id", projectSpecificMiddlewares, async (req, res) => {
     const { id } = req.params;
-    const ownerId = req.user.id;
     const { name, description } = req.body;
-
     if (!name) {
         return res.status(400).json({ error: "Project name is required" });
     }
-
     try {
-        const updatedProject = await pool.query("UPDATE projects SET name = $1, description = $2 WHERE id = $3 AND owner_id = $4 RETURNING *", [
-            name,
-            description,
-            id,
-            ownerId,
-        ]);
-
-        if (updatedProject.rowCount === 0) {
-            return res.status(404).json({ error: "Project not found or you do not have permission to edit it" });
-        }
-
+        const updatedProject = await pool.query("UPDATE projects SET name = $1, description = $2 WHERE id = $3 RETURNING *", [name, description, id]);
         res.json(updatedProject.rows[0]);
     } catch (error) {
         console.error(`Update project id=${id} error:`, error.stack);
@@ -90,19 +79,10 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-// DELETE - Удаление проекта по ID (с проверкой владения)
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", projectSpecificMiddlewares, async (req, res) => {
     const { id } = req.params;
-    const ownerId = req.user.id;
-
     try {
-        const deleteOp = await pool.query("DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING *", [id, ownerId]);
-
-        if (deleteOp.rowCount === 0) {
-            return res.status(404).json({ error: "Project not found or you do not have permission to delete it" });
-        }
-
-        // Возвращаем сообщение об успехе. Можно вернуть и удаленный объект, если нужно.
+        await pool.query("DELETE FROM projects WHERE id = $1", [id]);
         res.status(200).json({ message: "Project deleted successfully" });
     } catch (error) {
         console.error(`Delete project id=${id} error:`, error.stack);
