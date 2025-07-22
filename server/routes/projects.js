@@ -3,9 +3,11 @@ const router = express.Router();
 const pool = require("../db");
 const authMiddleware = require("../middleware/authMiddleware");
 const checkProjectAccess = require("../middleware/checkProjectAccess");
+const { hasRole } = require("../middleware/checkRole");
 
 router.use(authMiddleware);
 
+// create
 router.post("/", async (req, res) => {
     const { name, description } = req.body;
 
@@ -28,6 +30,7 @@ router.post("/", async (req, res) => {
     }
 });
 
+// get all
 router.get("/", authMiddleware, async (req, res) => {
     // Убедитесь, что используете ваш authMiddleware
     const userId = req.user.id;
@@ -48,9 +51,8 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 });
 
-const projectSpecificMiddlewares = [checkProjectAccess];
-
-router.get("/:id", projectSpecificMiddlewares, async (req, res) => {
+// get one
+router.get("/:id", checkProjectAccess, async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query("SELECT * FROM projects WHERE id = $1", [id]);
@@ -64,7 +66,8 @@ router.get("/:id", projectSpecificMiddlewares, async (req, res) => {
     }
 });
 
-router.put("/:id", projectSpecificMiddlewares, async (req, res) => {
+// update
+router.put("/:id", [checkProjectAccess, hasRole(["owner"])], async (req, res) => {
     const { id } = req.params;
     const { name, description } = req.body;
     if (!name) {
@@ -74,18 +77,17 @@ router.put("/:id", projectSpecificMiddlewares, async (req, res) => {
         const updatedProject = await pool.query("UPDATE projects SET name = $1, description = $2 WHERE id = $3 RETURNING *", [name, description, id]);
         res.json(updatedProject.rows[0]);
     } catch (error) {
-        console.error(`Update project id=${id} error:`, error.stack);
         res.status(500).json({ error: "Failed to update project" });
     }
 });
 
-router.delete("/:id", projectSpecificMiddlewares, async (req, res) => {
+// delete
+router.delete("/:id", [checkProjectAccess, hasRole(["owner"])], async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query("DELETE FROM projects WHERE id = $1", [id]);
         res.status(200).json({ message: "Project deleted successfully" });
     } catch (error) {
-        console.error(`Delete project id=${id} error:`, error.stack);
         res.status(500).json({ error: "Failed to delete project" });
     }
 });
