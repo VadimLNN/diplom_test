@@ -12,6 +12,7 @@ const ProjectPage = () => {
     const { projectId } = useParams();
 
     // Состояния для данных
+    const [userRole, setUserRole] = useState(null);
     const [project, setProject] = useState(null);
     const [documents, setDocuments] = useState([]);
 
@@ -27,12 +28,15 @@ const ProjectPage = () => {
         setError("");
         try {
             // Загружаем данные о проекте и его документы параллельно для скорости
-            const [projectResponse, documentsResponse] = await Promise.all([
+            const [projectResponse, documentsResponse, roleResponse] = await Promise.all([
                 api.get(`/projects/${projectId}`),
                 api.get(`/documents/project/${projectId}`),
+                api.get(`/projects/${projectId}/permissions/my-role`),
             ]);
+
             setProject(projectResponse.data);
             setDocuments(documentsResponse.data);
+            setUserRole(roleResponse.data.role);
         } catch (err) {
             setError(err.response?.data?.error || "Failed to fetch project data. You may not have access.");
             console.error("Fetch error:", err);
@@ -112,33 +116,43 @@ const ProjectPage = () => {
 
     return (
         <div className="container">
+            {/* Отображаем название проекта и роль пользователя (удобно для отладки) */}
             <h1>Project: {project?.name}</h1>
+            {userRole && (
+                <p className="role-indicator">
+                    Your role: <strong>{userRole}</strong>
+                </p>
+            )}
             <p>{project?.description}</p>
 
             <hr />
 
-            {/* --- Блок управления участниками --- */}
-            <ProjectMembers projectId={projectId} />
+            {/* --- Блок управления участниками - ВИДЕН ТОЛЬКО ВЛАДЕЛЬЦУ (`owner`) --- */}
+            {userRole === "owner" && <ProjectMembers projectId={projectId} />}
 
-            <hr />
+            {userRole === "owner" && <hr />}
 
             {/* --- Блок создания и списка документов --- */}
             <div className="documents-section">
                 <h2>Documents</h2>
-                <div className="card">
-                    <h3>Create New Document</h3>
-                    <form onSubmit={handleCreateDocument} className="form">
-                        <input
-                            value={newDocumentTitle}
-                            onChange={(e) => setNewDocumentTitle(e.target.value)}
-                            placeholder="New document title"
-                            required
-                        />
-                        <button type="submit" className="btn btn-primary">
-                            Create
-                        </button>
-                    </form>
-                </div>
+
+                {/* --- Форма создания документа - ВИДНА ВЛАДЕЛЬЦУ И РЕДАКТОРУ (`owner`, `editor`) --- */}
+                {(userRole === "owner" || userRole === "editor") && (
+                    <div className="card">
+                        <h3>Create New Document</h3>
+                        <form onSubmit={handleCreateDocument} className="form">
+                            <input
+                                value={newDocumentTitle}
+                                onChange={(e) => setNewDocumentTitle(e.target.value)}
+                                placeholder="New document title"
+                                required
+                            />
+                            <button type="submit" className="btn btn-primary">
+                                Create
+                            </button>
+                        </form>
+                    </div>
+                )}
 
                 <div className="document-grid">
                     {documents.length > 0 ? (
@@ -148,16 +162,21 @@ const ProjectPage = () => {
                                 <p>{doc.content ? `${doc.content.substring(0, 50)}...` : "Empty document"}</p>
                                 <div className="document-actions">
                                     <button className="btn btn-secondary" onClick={() => setSelectedDocument(doc)}>
-                                        Open Editor
+                                        {/* --- Меняем текст кнопки для НАБЛЮДАТЕЛЯ (`viewer`) --- */}
+                                        {userRole === "owner" || userRole === "editor" ? "Edit" : "View"}
                                     </button>
-                                    <button className="btn btn-danger" onClick={() => handleDeleteDocument(doc.id)}>
-                                        Delete
-                                    </button>
+
+                                    {/* --- Кнопка удаления - ВИДНА ВЛАДЕЛЬЦУ И РЕДАКТОРУ (`owner`, `editor`) --- */}
+                                    {(userRole === "owner" || userRole === "editor") && (
+                                        <button className="btn btn-danger" onClick={() => handleDeleteDocument(doc.id)}>
+                                            Delete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <p>No documents in this project yet. Create one!</p>
+                        <p>No documents in this project yet. {(userRole === "owner" || userRole === "editor") && "Create one!"}</p>
                     )}
                 </div>
             </div>
@@ -167,16 +186,21 @@ const ProjectPage = () => {
                 <div className="card editor-modal-backdrop">
                     <div className="editor-modal-content">
                         <div className="editor-header">
-                            <h2>Editing: {selectedDocument.title}</h2>
+                            {/* --- Меняем заголовок для НАБЛЮДАТЕЛЯ (`viewer`) --- */}
+                            <h2>
+                                {userRole === "owner" || userRole === "editor" ? "Editing" : "Viewing"}: {selectedDocument.title}
+                            </h2>
                             <button className="btn btn-close" onClick={() => setSelectedDocument(null)}>
                                 ×
                             </button>
                         </div>
                         <CollaborativeEditor
-                            key={selectedDocument.id} // Важно! `key` заставит редактор пересоздаться при выборе другого документа
+                            key={selectedDocument.id}
                             documentId={selectedDocument.id}
-                            initialContent={selectedDocument.content}
+                            // initialContent больше не нужен, редактор сам загрузит свежие данные
                             onSave={handleSaveDocument}
+                            // --- ПЕРЕДАЕМ ФЛАГ "ТОЛЬКО ДЛЯ ЧТЕНИЯ" ---
+                            isReadOnly={userRole === "viewer"}
                         />
                     </div>
                 </div>
