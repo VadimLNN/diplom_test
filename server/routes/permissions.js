@@ -1,7 +1,9 @@
 const express = require("express");
-const router = express.Router({ mergeParams: true }); // mergeParams нужен, чтобы получить :projectId из родительского роута
+const router = express.Router({ mergeParams: true });
 const pool = require("../db");
+
 const authMiddleware = require("../middleware/authMiddleware");
+const checkProjectAccess = require("../middleware/checkProjectAccess");
 const { hasRole, getUserRoleInProject } = require("../middleware/checkRole");
 
 router.use(authMiddleware);
