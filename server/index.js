@@ -8,6 +8,8 @@ const cors = require("cors");
 const app = express();
 const server = http.createServer(app); // 3. Создаем HTTP сервер на основе Express приложения
 
+const { loginLimiter } = require("./middleware/rateLimiter");
+
 // 4. Настраиваем CORS для Socket.IO (отдельно от Express)
 const io = new Server(server, {
     cors: {
@@ -25,6 +27,9 @@ app.use(
         exposedHeaders: ["Authorization"],
     })
 );
+
+// Эта строка должна быть ПЕРЕД основной регистрацией роутов
+app.use("/api/auth", loginLimiter);
 
 // --- Ваши роуты остаются без изменений ---
 app.use("/api/auth", require("./routes/auth"));
