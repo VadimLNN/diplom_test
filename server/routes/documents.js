@@ -1,108 +1,67 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../db");
+
 const authMiddleware = require("../middleware/authMiddleware");
 const checkProjectAccess = require("../middleware/checkProjectAccess");
 const { hasRole, getUserRoleInProject } = require("../middleware/checkRole");
 
+// Сервис
+const documentService = require("../services/documentService");
+
 router.use(authMiddleware);
 
-// GET /api/documents/project/:projectId - Получить все документы (все участники)
+// GET /api/documents/project/:projectId
 router.get("/project/:projectId", checkProjectAccess, async (req, res) => {
-    const { projectId } = req.params;
     try {
-        const { rows } = await pool.query("SELECT * FROM documents WHERE project_id = $1 ORDER BY created_at", [projectId]);
-        res.json(rows);
+        const documents = await documentService.getDocumentsForProject(req.params.projectId);
+        res.json(documents);
     } catch (error) {
         res.status(500).json({ error: "Server error fetching documents" });
     }
 });
 
-// GET /api/documents/:id - Получить один документ (все участники)
+// GET /api/documents/:id
 router.get("/:id", async (req, res) => {
-    const { id } = req.params;
     try {
-        const docResult = await pool.query("SELECT * FROM documents WHERE id = $1", [id]);
-        if (docResult.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+        const document = await documentService.getDocumentById(req.params.id);
+        if (!document) return res.status(404).json({ error: "Document not found" });
 
-        req.params.projectId = docResult.rows[0].project_id;
-        checkProjectAccess(req, res, () => res.json(docResult.rows[0]));
+        // Проверяем доступ к проекту, в котором находится документ
+        req.params.projectId = document.project_id;
+        checkProjectAccess(req, res, () => res.json(document));
     } catch (error) {
         res.status(500).json({ error: "Server error" });
     }
 });
 
-// POST /api/documents/project/:projectId - Создать документ (owner, editor)
+// POST /api/documents/project/:projectId
 router.post("/project/:projectId", [checkProjectAccess, hasRole(["owner", "editor"])], async (req, res) => {
-    const { projectId } = req.params;
-    const { title, content } = req.body;
-    if (!title) return res.status(400).json({ error: "Title is required" });
     try {
-        const { rows } = await pool.query("INSERT INTO documents (project_id, title, content, owner_id) VALUES ($1, $2, $3, $4) RETURNING *", [
-            projectId,
-            title,
-            content || "",
-            req.user.id,
-        ]);
-        res.status(201).json(rows[0]);
+        const newDocument = await documentService.createDocument(req.user.id, req.params.projectId, req.body);
+        res.status(201).json(newDocument);
     } catch (error) {
-        res.status(500).json({ error: "Creation failed" });
+        res.status(400).json({ error: error.message });
     }
 });
 
-// PUT /api/documents/:id - Обновить документ (owner, editor)
+// PUT /api/documents/:id
 router.put("/:id", async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const { title, content } = req.body;
-    if (title === undefined && content === undefined) return res.status(400).json({ error: "Nothing to update" });
-
     try {
-        const docResult = await pool.query("SELECT * FROM documents WHERE id = $1", [id]);
-        if (docResult.rows.length === 0) return res.status(404).json({ error: "Document not found" });
-
-        const document = docResult.rows[0];
-        const projectId = document.project_id;
-
-        // Проверяем роль вручную, т.к. projectId получаем по ходу дела
-        const userRole = await getUserRoleInProject(userId, projectId);
-        if (!["owner", "editor"].includes(userRole)) {
-            return res.status(403).json({ error: "Forbidden: You do not have permission to edit this document." });
-        }
-
-        const newTitle = title !== undefined ? title : document.title;
-        const newContent = content !== undefined ? content : document.content;
-        const { rows } = await pool.query("UPDATE documents SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *", [
-            newTitle,
-            newContent,
-            id,
-        ]);
-        res.json(rows[0]);
+        const updatedDocument = await documentService.updateDocument(req.user.id, req.params.id, req.body);
+        res.json(updatedDocument);
     } catch (error) {
-        res.status(500).json({ error: "Update failed" });
+        // Ловим ошибку из сервиса и используем ее статус-код
+        res.status(error.statusCode || 400).json({ error: error.message });
     }
 });
 
-// DELETE /api/documents/:id - Удалить документ (owner, editor)
+// DELETE /api/documents/:id
 router.delete("/:id", async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
-
     try {
-        const docResult = await pool.query("SELECT project_id FROM documents WHERE id = $1", [id]);
-        if (docResult.rows.length === 0) return res.status(404).json({ error: "Document not found" });
-
-        const projectId = docResult.rows[0].project_id;
-
-        const userRole = await getUserRoleInProject(userId, projectId);
-        if (!["owner", "editor"].includes(userRole)) {
-            return res.status(403).json({ error: "Forbidden: You do not have permission to delete this document." });
-        }
-
-        await pool.query("DELETE FROM documents WHERE id = $1", [id]);
+        await documentService.deleteDocument(req.user.id, req.params.id);
         res.status(204).send();
     } catch (error) {
-        res.status(500).json({ error: "Delete failed" });
+        res.status(error.statusCode || 400).json({ error: error.message });
     }
 });
 
