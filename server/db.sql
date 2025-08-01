@@ -1,5 +1,5 @@
 -- Таблица пользователей
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE users (
 );
 
 -- Таблица проектов
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -17,7 +17,7 @@ CREATE TABLE projects (
 );
 
 -- Таблица документов
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     title VARCHAR(100) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE documents (
 );
 
 -- Таблица разрешений для совместной работы
-CREATE TABLE project_permissions (
+CREATE TABLE IF NOT EXISTS project_permissions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
@@ -36,6 +36,6 @@ CREATE TABLE project_permissions (
 );
 
 -- Индексы для оптимизации
-CREATE INDEX idx_documents_project_id ON documents(project_id);
-CREATE INDEX idx_project_permissions_user_id ON project_permissions(user_id);
-CREATE INDEX idx_project_permissions_project_id ON project_permissions(project_id);
+CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_permissions_user_id ON project_permissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_permissions_project_id ON project_permissions(project_id);
