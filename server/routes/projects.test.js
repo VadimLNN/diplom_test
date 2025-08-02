@@ -1,33 +1,19 @@
 const request = require("supertest");
-const express = require("express");
 const { app } = require("../app");
 const pool = require("../db");
-const projectsRouter = require("./projects");
 const jwt = require("jsonwebtoken");
-
-// Создаем "игрушечное" Express-приложение для тестов
-const app = express();
-app.use(express.json());
 
 describe("Projects API", () => {
     let testToken;
+    let testUser;
 
     // Хуки, которые выполняются до и после тестов
-    beforeAll(async () => {
-        // Перед всеми тестами чистим и заполняем таблицы
-        await pool.query("DELETE FROM projects");
-        await pool.query(
-            "INSERT INTO users (id, username, password, email) VALUES (1, 'testuser', 'hashed', 'test@test.com') ON CONFLICT (id) DO NOTHING"
-        );
-        await pool.query(
-            "INSERT INTO users (id, username, password, email) VALUES (1, 'testuser', 'hashed', 'test@test.com') ON CONFLICT (id) DO UPDATE SET username = 'testuser'"
-        );
-        testToken = jwt.sign({ id: 1, username: "testuser" }, process.env.JWT_SECRET);
-    });
+    beforeEach(async () => {
+        const userResult = await pool.query("INSERT INTO users (username, password, email) VALUES ('testuser', 'pw', 'test@test.com') RETURNING *");
+        testUser = userResult.rows[0];
 
-    afterAll(async () => {
-        // После всех тестов закрываем соединение с базой
-        await pool.end();
+        // 2. Генерируем для него токен с правильным ID
+        testToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET);
     });
 
     test("POST /api/projects - should create a new project", async () => {
@@ -45,11 +31,22 @@ describe("Projects API", () => {
     });
 
     test("GET /api/projects - should return a list of projects", async () => {
+        // --- ШАГ 1: Подготовка данных СПЕЦИАЛЬНО для этого теста ---
+        // Создаем проект, который мы ожидаем получить в ответе
+        const projectResult = await pool.query("INSERT INTO projects (name, description, owner_id) VALUES ($1, $2, $3) RETURNING *", [
+            "My Awesome Project",
+            "Description for GET",
+            testUser.id,
+        ]);
+        const createdProject = projectResult.rows[0];
+
+        // --- ШАГ 2: Выполнение теста ---
         const response = await request(app).get("/api/projects").set("Authorization", `Bearer ${testToken}`);
 
+        // --- ШАГ 3: Проверка результата ---
         expect(response.statusCode).toBe(200);
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBe(1); // Должен быть один проект, созданный в предыдущем тесте
-        expect(response.body[0].name).toBe("Test Project");
+        expect(response.body.length).toBe(1);
+        expect(response.body[0].id).toBe(createdProject.id);
+        expect(response.body[0].name).toBe("My Awesome Project");
     });
 });
