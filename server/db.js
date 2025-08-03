@@ -4,8 +4,8 @@ require("dotenv").config();
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const databaseName = isTestEnvironment ? process.env.DB_TEST_DATABASE : process.env.DB_DATABASE;
 
-console.log(`Node environment: ${process.env.NODE_ENV}`);
-console.log(`Connecting to database: ${databaseName}`);
+// console.log(`Node environment: ${process.env.NODE_ENV}`);
+// console.log(`Connecting to database: ${databaseName}`);
 
 const pool = new Pool({
     user: process.env.DB_USER,
@@ -23,6 +23,6 @@ pool.on("error", (err, client) => {
     process.exit(-1);
 });
 
-console.log("Database pool configured.");
+// console.log("Database pool configured.");
 
 module.exports = pool;

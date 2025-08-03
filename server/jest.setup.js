@@ -2,7 +2,7 @@ const pool = require("./db"); // Наш "умный" db.js
 
 // Эта функция будет выполняться один раз перед запуском всех тестов
 beforeAll(async () => {
-    console.log("--- JEST SETUP: CREATING TABLES IN TEST DB ---");
+    //console.log("--- JEST SETUP: CREATING TABLES IN TEST DB ---");
     // Здесь вы можете вставить SQL для создания ваших таблиц
     // Это гарантирует, что структура тестовой базы всегда актуальна
     await pool.query(`
@@ -58,7 +58,7 @@ beforeEach(async () => {
 
 // Эта функция будет выполняться один раз после всех тестов
 afterAll(async () => {
-    console.log("--- JEST TEARDOWN: CLOSING DB POOL ---");
+    //console.log("--- JEST TEARDOWN: CLOSING DB POOL ---");
     if (pool.totalCount > 0) {
         await pool.end();
     } // Закрываем соединение с базой, чтобы Jest мог корректно завершиться
