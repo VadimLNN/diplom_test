@@ -33,7 +33,11 @@ router.get("/my-role", checkProjectAccess, async (req, res) => {
 // POST / - Пригласить пользователя
 router.post("/", hasRole(["owner"]), async (req, res) => {
     try {
-        const newPermission = await permissionService.inviteUser(req.params.projectId, req.body);
+        const newPermission = await permissionService.inviteUser(
+            req.params.projectId, // 1. ID проекта
+            req.user.id, // 2. ID того, кто приглашает (из токена)
+            req.body // 3. Данные приглашения (email, role)
+        );
         res.status(201).json(newPermission);
     } catch (error) {
         res.status(error.statusCode || 500).json({ error: error.message });
