@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS project_permissions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('owner', 'editor', 'viewer'))
+    role VARCHAR(20) NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
+    CONSTRAINT unique_user_project_permission UNIQUE (user_id, project_id)
 );
 
 -- Индексы для оптимизации
