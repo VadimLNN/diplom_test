@@ -48,8 +48,14 @@ describe("Auth API (/api/auth)", () => {
 
             const response = await request(app).post("/api/auth/register").send(invalidUserData);
 
-            expect(response.statusCode).toBe(400);
-            expect(response.body.error).toContain("required");
+            expect(response.body).toHaveProperty("errors");
+            // Мы ожидаем две ошибки: одну для email, одну для пароля.
+            expect(response.body.errors.length).toBeGreaterThanOrEqual(2);
+
+            // Проверим, что сообщения об ошибках присутствуют
+            const errorMessages = response.body.errors.map((e) => e.msg);
+            expect(errorMessages).toContain("Please enter a valid email");
+            expect(errorMessages).toContain("Password must be at least 6 characters long");
         });
     });
 

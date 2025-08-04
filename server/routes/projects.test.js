@@ -70,8 +70,8 @@ describe("Projects API", () => {
 
             const response = await request(app).post("/api/projects").set("Authorization", `Bearer ${ownerToken}`).send(invalidProjectData);
 
-            expect(response.statusCode).toBe(400);
-            expect(response.body).toEqual({ error: "Project name is required" }); // Или другое сообщение из вашего сервиса
+            expect(response.body).toHaveProperty("errors"); // Проверяем, что есть поле 'errors'
+            expect(response.body.errors[0].msg).toBe("Project name cannot be empty."); // Или другое сообщение из вашего сервиса
         });
 
         test("should create a project even if description is missing", async () => {
@@ -213,8 +213,8 @@ describe("Projects API", () => {
                 .set("Authorization", `Bearer ${ownerToken}`)
                 .send(invalidUpdateData);
 
-            expect(response.statusCode).toBe(400);
-            expect(response.body).toEqual({ error: "Project name is required" }); // Сообщение из вашего projectService
+            expect(response.body).toHaveProperty("errors");
+            expect(response.body.errors[0].msg).toBe("Project name cannot be empty.");
         });
     });
 

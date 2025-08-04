@@ -92,6 +92,16 @@ describe("Documents API", () => {
 
             expect(response.statusCode).toBe(403);
         });
+
+        test("should return 400 if title is empty", async () => {
+            const response = await request(app)
+                .post(`/api/documents/project/${testProject.id}`)
+                .set("Authorization", `Bearer ${ownerToken}`)
+                .send({ title: "", content: "some content" });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.errors[0].msg).toBe("Title cannot be empty");
+        });
     });
 
     describe("PUT /api/documents/:id", () => {
@@ -114,6 +124,17 @@ describe("Documents API", () => {
 
             expect(response.statusCode).toBe(403);
             expect(response.body.error).toContain("permission to edit");
+        });
+
+        test("should return 400 if title is updated to be too long", async () => {
+            const longTitle = "a".repeat(151);
+            const response = await request(app)
+                .put(`/api/documents/${testDocument.id}`)
+                .set("Authorization", `Bearer ${ownerToken}`)
+                .send({ title: longTitle });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.errors[0].msg).toBe("Title cannot be more than 150 characters");
         });
     });
 

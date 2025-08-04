@@ -65,6 +65,26 @@ describe("Permissions API (/api/projects/:projectId/permissions)", () => {
 
             expect(response.statusCode).toBe(409); // Conflict
         });
+
+        test("should return 400 for an invalid email", async () => {
+            const response = await request(app)
+                .post(`/api/projects/${testProject.id}/permissions`)
+                .set("Authorization", `Bearer ${ownerToken}`)
+                .send({ email: "not-an-email", role: "viewer" });
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.errors[0].msg).toBe("Please provide a valid email address");
+        });
+
+        test("should return 400 for an invalid role", async () => {
+            const response = await request(app)
+                .post(`/api/projects/${testProject.id}/permissions`)
+                .set("Authorization", `Bearer ${ownerToken}`)
+                .send({ email: "invitee@test.com", role: "admin" }); // 'admin' - невалидная роль
+
+            expect(response.statusCode).toBe(400);
+            expect(response.body.errors[0].msg).toBe("Role must be either 'editor' or 'viewer'");
+        });
     });
 
     describe("GET /", () => {
