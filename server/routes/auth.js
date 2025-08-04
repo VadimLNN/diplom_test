@@ -1,11 +1,55 @@
 const { body, validationResult } = require("express-validator");
 const express = require("express");
 const router = express.Router();
-
 const authMiddleware = require("../middleware/authMiddleware"); // <-- Импортируем middleware
-
 const authService = require("../services/authService");
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Аутентификация и управление пользователями
+ */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Регистрация нового пользователя
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: Уникальное имя пользователя.
+ *                 example: johndoe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Уникальный email пользователя.
+ *                 example: johndoe@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Пароль (минимум 6 символов).
+ *                 example: password123
+ *     responses:
+ *       201:
+ *         description: Пользователь успешно создан. Возвращает данные пользователя (без пароля).
+ *       400:
+ *         description: Ошибка валидации (например, невалидный email или короткий пароль).
+ *       409:
+ *         description: Конфликт (пользователь с таким username или email уже существует).
+ */
 router.post(
     "/register",
     body("username").isLength({ min: 3 }).withMessage("Username must be at least 3 characters long"),
@@ -26,6 +70,43 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Вход пользователя в систему
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: johndoe
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Успешный вход. Возвращает JWT токен.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       401:
+ *         description: Неверные учетные данные.
+ */
 router.post(
     "/login",
     body("username").isLength({ min: 3 }).withMessage("Username must be at least 3 characters long"),
@@ -45,6 +126,20 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/user:
+ *   get:
+ *     summary: Получение информации о текущем пользователе
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Данные текущего пользователя.
+ *       401:
+ *         description: Неавторизован (токен отсутствует или невалиден).
+ */
 router.get("/user", authMiddleware, async (req, res) => {
     try {
         const user = await authService.getUserInfo(req.user.id);

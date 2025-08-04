@@ -10,6 +10,33 @@ const permissionService = require("../services/permissionService");
 
 router.use(authMiddleware);
 
+/**
+ * @swagger
+ * tags:
+ *   name: Permissions
+ *   description: Управление доступом пользователей к проектам
+ */
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/permissions:
+ *   get:
+ *     summary: Получить список всех участников проекта
+ *     tags: [Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Список участников проекта, включая владельца.
+ *       403:
+ *         description: Доступ к проекту запрещен.
+ */
 // GET / - Получить список участников
 router.get("/", checkProjectAccess, async (req, res) => {
     try {
@@ -21,6 +48,34 @@ router.get("/", checkProjectAccess, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/projects/{projectId}/permissions/my-role:
+ *   get:
+ *     summary: Получить свою роль в проекте
+ *     tags: [Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Роль текущего пользователя.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 role:
+ *                   type: string
+ *                   example: editor
+ *       403:
+ *         description: Доступ к проекту запрещен.
+ */
 // GET /my-role - Получить свою роль
 router.get("/my-role", checkProjectAccess, async (req, res) => {
     try {
@@ -31,6 +86,46 @@ router.get("/my-role", checkProjectAccess, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/projects/{projectId}/permissions:
+ *   post:
+ *     summary: Пригласить нового пользователя в проект (только для владельца)
+ *     tags: [Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, role]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "newmember@example.com"
+ *               role:
+ *                 type: string
+ *                 enum: [editor, viewer]
+ *                 example: "editor"
+ *     responses:
+ *       201:
+ *         description: Пользователь успешно приглашен.
+ *       403:
+ *         description: Нет прав для приглашения (не владелец).
+ *       404:
+ *         description: Пользователь с таким email не найден.
+ *       409:
+ *         description: Этот пользователь уже в проекте.
+ */
 // POST / - Пригласить пользователя
 router.post(
     "/",
@@ -53,6 +148,31 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/projects/{projectId}/permissions/{userId}:
+ *   delete:
+ *     summary: Удалить пользователя из проекта (только для владельца)
+ *     tags: [Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Пользователь успешно удален из проекта.
+ *       403:
+ *         description: Нет прав для удаления (не владелец).
+ */
 // DELETE /:userId - Удалить участника
 router.delete("/:userId", hasRole(["owner"]), async (req, res) => {
     try {

@@ -11,6 +11,34 @@ const documentService = require("../services/documentService");
 
 router.use(authMiddleware);
 
+/**
+ * @swagger
+ * tags:
+ *   name: Documents
+ *   description: Управление документами внутри проектов
+ */
+
+/**
+ * @swagger
+ * /api/documents/project/{projectId}:
+ *   get:
+ *     summary: Получить все документы для конкретного проекта
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID проекта, документы которого нужно получить.
+ *     responses:
+ *       200:
+ *         description: Список документов.
+ *       403:
+ *         description: Доступ к проекту запрещен.
+ */
 // GET /api/documents/project/:projectId
 router.get("/project/:projectId", checkProjectAccess, async (req, res) => {
     try {
@@ -21,6 +49,29 @@ router.get("/project/:projectId", checkProjectAccess, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/documents/{id}:
+ *   get:
+ *     summary: Получить один документ по его ID
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID документа.
+ *     responses:
+ *       200:
+ *         description: Данные документа.
+ *       403:
+ *         description: Доступ к проекту, в котором находится документ, запрещен.
+ *       404:
+ *         description: Документ не найден.
+ */
 // GET /api/documents/:id
 router.get("/:id", async (req, res) => {
     try {
@@ -35,6 +86,41 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/documents/project/{projectId}:
+ *   post:
+ *     summary: Создать новый документ в проекте (для владельцев и редакторов)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID проекта, в котором создается документ.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title]
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: "Meeting Notes"
+ *               content:
+ *                 type: string
+ *                 example: "Initial content..."
+ *     responses:
+ *       201:
+ *         description: Документ успешно создан.
+ *       403:
+ *         description: Недостаточно прав для создания (не владелец/редактор).
+ */
 // POST /api/documents/project/:projectId
 router.post(
     "/project/:projectId",
@@ -63,6 +149,38 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/documents/{id}:
+ *   put:
+ *     summary: Обновить документ (для владельцев и редакторов)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID документа.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Документ успешно обновлен.
+ *       403:
+ *         description: Недостаточно прав для редактирования.
+ */
 // PUT /api/documents/:id
 router.put(
     "/:id",
@@ -92,6 +210,27 @@ router.put(
     }
 );
 
+/**
+ * @swagger
+ * /api/documents/{id}:
+ *   delete:
+ *     summary: Удалить документ (для владельцев и редакторов)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID документа.
+ *     responses:
+ *       204:
+ *         description: Документ успешно удален (нет тела ответа).
+ *       403:
+ *         description: Недостаточно прав для удаления.
+ */
 // DELETE /api/documents/:id
 router.delete("/:id", async (req, res) => {
     try {
