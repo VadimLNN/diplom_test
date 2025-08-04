@@ -1,3 +1,4 @@
+const { body, validationResult } = require("express-validator");
 const express = require("express");
 const router = express.Router();
 
@@ -5,14 +6,19 @@ const authMiddleware = require("../middleware/authMiddleware"); // <-- Импо�
 
 const authService = require("../services/authService");
 
-router.post("/register", async (req, res) => {
-    try {
-        const newUser = await authService.register(req.body);
-        res.status(201).json(newUser);
-    } catch (error) {
-        res.status(error.statusCode || 500).json({ error: error.message });
+router.post(
+    "/register",
+    body("email").isEmail().withMessage("Please enter a valid email"),
+    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters long"),
+    async (req, res) => {
+        try {
+            const newUser = await authService.register(req.body);
+            res.status(201).json(newUser);
+        } catch (error) {
+            res.status(error.statusCode || 500).json({ error: error.message });
+        }
     }
-});
+);
 
 router.post("/login", async (req, res) => {
     try {
