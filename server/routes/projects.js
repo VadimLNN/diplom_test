@@ -1,4 +1,5 @@
 const express = require("express");
+const { body, validationResult } = require("express-validator");
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -11,22 +12,39 @@ const projectService = require("../services/projectService");
 router.use(authMiddleware);
 
 // CREATE
-router.post("/", async (req, res) => {
-    try {
-        // 1. Извлекаем данные из запроса.
-        const userId = req.user.id;
-        const projectData = req.body;
+router.post(
+    "/",
+    // 2a. Добавляем middleware для валидации
+    body("name")
+        .trim() // Убираем пробелы по краям
+        .notEmpty()
+        .withMessage("Project name cannot be empty.")
+        .isLength({ max: 100 })
+        .withMessage("Project name cannot be more than 100 characters."),
+    body("description")
+        .optional() // Делаем поле необязательным
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage("Description cannot be more than 500 characters."),
 
-        // 2. Делегируем создание сервису.
-        const newProject = await projectService.createProject(userId, projectData);
+    // 2b. Основной обработчик роута
+    async (req, res) => {
+        // 2c. Проверяем результат валидации
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-        // 3. Отправляем успешный ответ.
-        res.status(201).json(newProject);
-    } catch (error) {
-        // 4. Если сервис выбросил ошибку (например, валидации), ловим её.
-        res.status(400).json({ error: error.message });
+        try {
+            const userId = req.user.id;
+            const projectData = req.body;
+            const newProject = await projectService.createProject(userId, projectData);
+            res.status(201).json(newProject);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
-});
+);
 
 // READ (ALL)
 router.get("/", async (req, res) => {
@@ -55,14 +73,36 @@ router.get("/:id", checkProjectAccess, async (req, res) => {
 });
 
 // UPDATE
-router.put("/:id", [checkProjectAccess, hasRole(["owner"])], async (req, res) => {
-    try {
-        const updatedProject = await projectService.updateProject(req.params.id, req.body);
-        res.json(updatedProject);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
+router.put(
+    "/:id",
+    // 3a. Middleware прав доступа остаются на своих местах
+    [checkProjectAccess, hasRole(["owner"])],
+
+    // 3b. Добавляем те же правила валидации, что и для создания
+    body("name")
+        .trim()
+        .notEmpty()
+        .withMessage("Project name cannot be empty.")
+        .isLength({ max: 100 })
+        .withMessage("Project name cannot be more than 100 characters."),
+    body("description").optional().trim().isLength({ max: 500 }).withMessage("Description cannot be more than 500 characters."),
+
+    // 3c. Основной обработчик роута
+    async (req, res) => {
+        // 3d. Проверяем результат валидации
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const updatedProject = await projectService.updateProject(req.params.id, req.body);
+            res.json(updatedProject);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
-});
+);
 
 // DELETE - Удаление проекта
 router.delete("/:id", [checkProjectAccess, hasRole(["owner"])], async (req, res) => {

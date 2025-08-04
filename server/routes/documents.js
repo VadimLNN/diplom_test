@@ -1,4 +1,5 @@
 const express = require("express");
+const { body, validationResult } = require("express-validator");
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -35,25 +36,61 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/documents/project/:projectId
-router.post("/project/:projectId", [checkProjectAccess, hasRole(["owner", "editor"])], async (req, res) => {
-    try {
-        const newDocument = await documentService.createDocument(req.user.id, req.params.projectId, req.body);
-        res.status(201).json(newDocument);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
+router.post(
+    "/project/:projectId",
+    [checkProjectAccess, hasRole(["owner", "editor"])],
+    // --- ПРАВИЛА ВАЛИДАЦИИ ---
+    body("title")
+        .trim()
+        .notEmpty()
+        .withMessage("Title cannot be empty")
+        .isLength({ max: 150 })
+        .withMessage("Title cannot be more than 150 characters"),
+    body("content").optional().isString().withMessage("Content must be a string"), // Базовая проверка типа
+
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const newDocument = await documentService.createDocument(req.user.id, req.params.projectId, req.body);
+            res.status(201).json(newDocument);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
-});
+);
 
 // PUT /api/documents/:id
-router.put("/:id", async (req, res) => {
-    try {
-        const updatedDocument = await documentService.updateDocument(req.user.id, req.params.id, req.body);
-        res.json(updatedDocument);
-    } catch (error) {
-        // Ловим ошибку из сервиса и используем ее статус-код
-        res.status(error.statusCode || 400).json({ error: error.message });
+router.put(
+    "/:id",
+    // --- ПРАВИЛА ВАЛИДАЦИИ ---
+    // Здесь мы делаем поля опциональными, так как можно обновлять что-то одно
+    body("title")
+        .optional()
+        .trim()
+        .notEmpty()
+        .withMessage("Title cannot be empty")
+        .isLength({ max: 150 })
+        .withMessage("Title cannot be more than 150 characters"),
+    body("content").optional().isString().withMessage("Content must be a string"),
+
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const updatedDocument = await documentService.updateDocument(req.user.id, req.params.id, req.body);
+            res.json(updatedDocument);
+        } catch (error) {
+            res.status(error.statusCode || 400).json({ error: error.message });
+        }
     }
-});
+);
 
 // DELETE /api/documents/:id
 router.delete("/:id", async (req, res) => {

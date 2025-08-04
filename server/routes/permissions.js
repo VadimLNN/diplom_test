@@ -1,4 +1,5 @@
 const express = require("express");
+const { body, validationResult } = require("express-validator");
 const router = express.Router({ mergeParams: true });
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -31,18 +32,26 @@ router.get("/my-role", checkProjectAccess, async (req, res) => {
 });
 
 // POST / - Пригласить пользователя
-router.post("/", hasRole(["owner"]), async (req, res) => {
-    try {
-        const newPermission = await permissionService.inviteUser(
-            req.params.projectId, // 1. ID проекта
-            req.user.id, // 2. ID того, кто приглашает (из токена)
-            req.body // 3. Данные приглашения (email, role)
-        );
-        res.status(201).json(newPermission);
-    } catch (error) {
-        res.status(error.statusCode || 500).json({ error: error.message });
+router.post(
+    "/",
+    hasRole(["owner"]),
+    // --- ПРАВИЛА ВАЛИДАЦИИ ---
+    body("email").isEmail().withMessage("Please provide a valid email address"),
+    body("role").isIn(["editor", "viewer"]).withMessage("Role must be either 'editor' or 'viewer'"),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const newPermission = await permissionService.inviteUser(req.params.projectId, req.user.id, req.body);
+            res.status(201).json(newPermission);
+        } catch (error) {
+            res.status(error.statusCode || 500).json({ error: error.message });
+        }
     }
-});
+);
 
 // DELETE /:userId - Удалить участника
 router.delete("/:userId", hasRole(["owner"]), async (req, res) => {
