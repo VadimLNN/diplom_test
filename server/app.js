@@ -9,7 +9,9 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { loginLimiter } = require("./middleware/rateLimiter");
 const { getUserRoleInProject } = require("./middleware/checkRole");
-const pool = require("./db"); // Нам понадобится pool
+const pool = require("./db");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
 
 // 3. Создание экземпляров app и server
 const app = express();
@@ -101,6 +103,50 @@ io.on("connection", (socket) => {
         console.log("❌ User disconnected:", socket.id);
     });
 });
+
+// --- НАСТРОЙКА SWAGGER ---
+
+// 1. Опции для swagger-jsdoc
+const swaggerOptions = {
+    definition: {
+        openapi: "3.0.0", // Версия спецификации OpenAPI
+        info: {
+            title: "Collaborative Editor API",
+            version: "1.0.0",
+            description:
+                "API документация для проекта коллаборативного редактора. Здесь описаны все эндпоинты для управления пользователями, проектами и документами.",
+        },
+        // Описываем, как серверы и аутентификация работают
+        servers: [
+            {
+                url: `http://localhost:${process.env.PORT || 5000}`,
+                description: "Development server",
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT",
+                },
+            },
+        },
+        security: [
+            {
+                bearerAuth: [],
+            },
+        ],
+    },
+    // Указываем, где swagger-jsdoc должен искать комментарии с документацией
+    apis: ["./routes/*.js"], // Искать во всех .js файлах внутри папки /routes
+};
+
+// 2. Генерируем спецификацию на основе опций
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// 3. Создаем новый роут для нашей документации
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 8. Экспортируем 'app' для тестов и 'server' для запуска
 module.exports = { app, server };
