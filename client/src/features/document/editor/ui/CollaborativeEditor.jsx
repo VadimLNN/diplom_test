@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { socket } from "../../../shared/api/socket";
-import api from "../../../shared/api/axios";
+import { socket } from "../../../../shared/api/socket";
 
 const CollaborativeEditor = ({ documentId, onSave }) => {
     const [content, setContent] = useState("Loading content...");

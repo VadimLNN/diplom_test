@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../shared/api/axios";
+import api from "../shared/api/axios";
 
 const List = () => {
     const navigate = useNavigate();

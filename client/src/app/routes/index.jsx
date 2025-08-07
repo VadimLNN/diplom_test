@@ -1,9 +1,9 @@
 import React from "react";
 import { Routes as ReactRoutes, Route } from "react-router-dom";
-import Login from "../../features/auth/Login";
-import Register from "../../features/auth/Register";
-import Projects from "../../features/projects/List";
-import ProjectPage from "../../features/projects/ProjectPage";
+import Login from "../../features/auth/ui/LoginForm";
+import Register from "../../features/auth/ui/RegisterForm";
+import Projects from "../../pages/ProjectDetailPage";
+import ProjectPage from "../../pages/ProjectsPage";
 
 const AppRoutes = () => (
     <ReactRoutes>

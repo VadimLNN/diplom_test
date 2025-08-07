@@ -1,6 +1,6 @@
 // features/manage-project-members/ui/ProjectMembers.jsx
 import React, { useState, useEffect } from "react";
-import api from "../../../shared/api/axios";
+import api from "../../../../shared/api/axios";
 
 const ProjectMembers = ({ projectId }) => {
     const [members, setMembers] = useState([]);
