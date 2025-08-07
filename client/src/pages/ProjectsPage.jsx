@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-
 // FSD: Импортируем из shared слоя
-import api from "../../shared/api/axios"; // Убедитесь, что путь к вашему настроенному axios верный
+import api from "../shared/api/axios"; // Убедитесь, что путь к вашему настроенному axios верный
 
 // FSD: Импортируем из features слоя
-import ProjectMembers from "../../features/document-editor/ui/ProjectMembers";
-import CollaborativeEditor from "../../features/document-editor/ui/CollaborativeEditor";
+import ProjectMembers from "../features/projects/manage-members/ui/ProjectMembers";
+import CollaborativeEditor from "../features/document/editor/ui/CollaborativeEditor";
 
 const ProjectPage = () => {
     const { projectId } = useParams();
