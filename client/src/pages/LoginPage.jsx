@@ -1,8 +1,11 @@
-import LoginForm from "../features/auth/ui/LoginForm";
+// src/pages/LoginPage.jsx
+import React from "react";
+import LoginForm from "../features/auth/ui/LoginForm.jsx";
+import styles from "./PageStyles.module.css";
 
 const LoginPage = () => {
     return (
-        <div className="page-container page-centered">
+        <div className={`${styles.pageContainer} ${styles.pageCentered}`}>
             <LoginForm />
         </div>
     );

@@ -1,61 +1,21 @@
-// src/app/routes/index.jsx
+// src/index.js
+
 import React from "react";
-import { Routes as ReactRoutes, Route } from "react-router-dom";
-import PrivateRoute from "./PrivateRoute"; // Ваш компонент для защиты роутов
+import { createRoot } from "react-dom/client";
+import App from "./app/App"; // 1. Импортируем ваш главный компонент App
 
-// Импортируем все наши новые страницы
-import LandingPage from "../../pages/LandingPage";
-import LoginPage from "../../pages/LoginPage";
-import RegisterPage from "../../pages/RegisterPage";
-import ProjectsDashboardPage from "../../pages/ProjectsDashboardPage";
-import ProjectDetailPage from "../../pages/ProjectDetailPage";
-import DocumentEditorPage from "../../pages/DocumentEditorPage";
-import SettingsPage from "../../pages/SettingsPage";
+// 2. Импортируем глобальные стили, чтобы они применились ко всему приложению
+import "./app/styles/index.css";
 
-const AppRoutes = () => (
-    <ReactRoutes>
-        {/* --- Публичные роуты --- */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+// 3. Находим корневой HTML-элемент в public/index.html
+const container = document.getElementById("root");
 
-        {/* --- Приватные роуты, защищенные PrivateRoute --- */}
-        <Route
-            path="/projects"
-            element={
-                <PrivateRoute>
-                    <ProjectsDashboardPage />
-                </PrivateRoute>
-            }
-        />
-        <Route
-            path="/projects/:projectId"
-            element={
-                <PrivateRoute>
-                    <ProjectDetailPage />
-                </PrivateRoute>
-            }
-        />
-        <Route
-            path="/documents/:documentId"
-            element={
-                <PrivateRoute>
-                    <DocumentEditorPage />
-                </PrivateRoute>
-            }
-        />
-        <Route
-            path="/settings"
-            element={
-                <PrivateRoute>
-                    <SettingsPage />
-                </PrivateRoute>
-            }
-        />
+// 4. Создаем "корень" React-приложения
+const root = createRoot(container);
 
-        {/* Можно добавить страницу 404 Not Found */}
-        <Route path="*" element={<div>Страница не найдена</div>} />
-    </ReactRoutes>
+// 5. "Рендерим" (отрисовываем) ваш компонент <App /> внутри этого элемента
+root.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
 );
-
-export default AppRoutes;

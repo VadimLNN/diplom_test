@@ -1,26 +1,40 @@
-// import { ProjectGrid } from '../widgets/ProjectGrid'; // Будет позже
-// import { RecentDocuments } from '../widgets/RecentDocuments'; // Будет позже
-// import { Header } from '../widgets/Header'; // Будет позже
+import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+// import { DocumentList } from '../widgets/DocumentList';
+// import { ProjectMembers } from '../features/project/manage-members';
+// import { ProjectSettings } from '../features/project/settings';
 
-const ProjectsDashboardPage = () => {
+const ProjectDetailPage = () => {
+    const { projectId } = useParams();
+    const [activeTab, setActiveTab] = useState("documents");
+
     return (
         <div className="page-container">
-            {/* <Header /> */}
-            <h2>Мои Проекты</h2>
-            <button>+ Создать проект</button>
-            <div style={{ display: "flex", gap: "20px" }}>
-                <div style={{ flex: 3 }}>
-                    <p>Здесь будет сетка проектов...</p>
-                    {/* <ProjectGrid /> */}
-                </div>
-                <div style={{ flex: 1, borderLeft: "1px solid #ccc", paddingLeft: "20px" }}>
-                    <h3>Последние документы</h3>
-                    <p>Здесь будет список последних документов...</p>
-                    {/* <RecentDocuments /> */}
-                </div>
+            <p>
+                <Link to="/projects">Проекты</Link> / Проект {projectId}
+            </p>
+            <h1>Название Проекта {projectId}</h1>
+            <p>Описание проекта...</p>
+
+            <div className="tabs">
+                <button onClick={() => setActiveTab("documents")} className={activeTab === "documents" ? "active" : ""}>
+                    Документы
+                </button>
+                <button onClick={() => setActiveTab("members")} className={activeTab === "members" ? "active" : ""}>
+                    Участники
+                </button>
+                <button onClick={() => setActiveTab("settings")} className={activeTab === "settings" ? "active" : ""}>
+                    Настройки
+                </button>
+            </div>
+
+            <div className="tab-content">
+                {activeTab === "documents" && <div>Контент вкладки "Документы"</div>}
+                {activeTab === "members" && <div>Контент вкладки "Участники"</div>}
+                {activeTab === "settings" && <div>Контент вкладки "Настройки"</div>}
             </div>
         </div>
     );
 };
 
-export default ProjectsDashboardPage;
+export default ProjectDetailPage;

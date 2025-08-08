@@ -1,258 +1,77 @@
+/* 1. Определяем наши дизайн-токены (цвета, тени, скругления) */
 :root {
-    --background: #1a1a1a;
-    --card-background: #2d333b;
-    --text-primary: #e1e4e8;
-    --text-secondary: #8b949e;
-    --primary: #2f81f7;
-    --primary-hover: #1f6feb;
-    --danger: #f85149;
-    --danger-hover: #da3633;
-    --secondary: #6e7681;
-    --secondary-hover: #5a626e;
-    --border: #30363d;
+    --font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+        sans-serif;
+
+    --color-background: #3e3e3e; /* Основной темный фон, как на макете */
+    --color-text: #b5b5b5; /* Цвет основного текста */
+    --color-text-placeholder: #8c8c8c; /* Цвет плейсхолдера */
+
+    /* Магия нойморфизма - тени! */
+    --shadow-light: #4a4a4a; /* Светлая тень (чуть светлее фона) */
+    --shadow-dark: #323232; /* Темная тень (чуть темнее фона) */
+
+    --border-radius-pill: 50px; /* Скругление для "таблеток" */
 }
 
+/* 2. Применяем базовые стили */
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    background: var(--background);
-    color: var(--text-primary);
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-nav {
-    background: #24292e;
-    padding: 10px 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-nav ul {
-    list-style: none;
+    font-family: var(--font-family-base);
+    background-color: var(--color-background);
+    color: var(--color-text);
     display: flex;
-    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
     margin: 0;
     padding: 0;
 }
 
-nav ul li {
-    display: inline;
+body {
+    font-family: var(--font-family-base);
+    background-color: var(--color-background);
+    color: var(--color-text);
+    /* Убираем flex отсюда, он будет в .app-layout */
 }
 
-nav a {
-    color: var(--text-primary);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-nav a:hover {
-    color: var(--primary);
-}
-
-.card {
-    background: var(--card-background);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-    transition: transform 0.2s;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.form input,
-.form textarea {
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: #21262d;
-    color: var(--text-primary);
-    font-size: 14px;
-}
-
-.form textarea {
-    resize: vertical;
-    min-height: 100px;
-}
-
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: var(--primary-hover);
-}
-
-.btn-secondary {
-    background: var(--secondary);
-    color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-    background: var(--secondary-hover);
-}
-
-.btn-danger {
-    background: var(--danger);
-    color: #fff;
-}
-
-.btn-danger:hover {
-    background: var(--danger-hover);
-}
-
-.message {
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-}
-
-.message.success {
-    background: #238636;
-    color: #fff;
-}
-
-.message.error {
-    background: #da3633;
-    color: #fff;
-}
-
-.project-grid,
-.document-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.project-card,
-.document-card {
+/* --- ШАГ 2: Убеждаемся, что наш главный layout тоже растянут --- */
+.app-layout {
+    width: 100%; /* Явно указываем ширину */
+    min-height: 100vh; /* Минимальная высота в размер экрана */
     display: flex;
     flex-direction: column;
 }
 
-.project-actions,
-.document-actions {
+/* --- ШАГ 3: Контейнер для основного контента --- */
+/* Эти стили у вас уже должны быть, просто проверьте */
+.main-content {
+    flex-grow: 1;
+    width: 100%;
     display: flex;
-    gap: 10px;
-    margin-top: auto;
+    flex-direction: column;
 }
 
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+.page-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 40px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.page-centered {
+    flex-grow: 1;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     justify-content: center;
-    z-index: 200;
-}
-
-.modal-content {
-    background: var(--card-background);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-    max-width: 500px;
-    width: 90%;
-    animation: fadeIn 0.3s;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.editor {
-    background: #21262d;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px;
-    min-height: 400px;
-}
-
-.ql-toolbar {
-    background: var(--card-background);
-    border: 1px solid var(--border);
-    border-bottom: none;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-}
-
-.ql-container {
-    border: 1px solid var(--border);
-    border-top: none;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-    color: var(--text-primary);
-}
-
-.ql-cursor {
-    border-left: 2px solid;
-    height: 1em;
-    position: absolute;
-}
-
-.ql-cursor-flag {
-    background: rgba(0, 0, 0, 0.5);
-    color: #fff;
-    font-size: 12px;
-    padding: 2px 4px;
-    border-radius: 2px;
-    position: absolute;
-    top: -1.5em;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    nav ul {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .project-grid,
-    .document-grid {
-        grid-template-columns: 1fr;
-    }
+    align-items: center;
+    text-align: center;
 }
