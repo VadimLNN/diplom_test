@@ -1,11 +1,9 @@
 // import { ProjectGrid } from '../widgets/ProjectGrid'; // Будет позже
 // import { RecentDocuments } from '../widgets/RecentDocuments'; // Будет позже
-// import { Header } from '../widgets/Header'; // Будет позже
 
 const ProjectsDashboardPage = () => {
     return (
         <div className="page-container">
-            {/* <Header /> */}
             <h2>Мои Проекты</h2>
             <button>+ Создать проект</button>
             <div style={{ display: "flex", gap: "20px" }}>

@@ -1,0 +1,64 @@
+.formContainer {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Новый стиль для полей ввода */
+.input {
+    height: 50px;
+    background: rgba(0, 0, 0, 0.2); /* Темный полупрозрачный фон */
+    border: 1px solid var(--glass-border-color);
+    border-radius: var(--border-radius-pill);
+    padding: 0 20px;
+    font-size: 16px;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease-in-out;
+}
+
+.input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5); /* Подсвечиваем рамку при фокусе */
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.actionsContainer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Стили для кнопок (можно вынести в shared/ui/Button) */
+.button {
+    height: 50px;
+    border: none;
+    border-radius: var(--border-radius-pill);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.primaryButton {
+    flex-grow: 1; /* Кнопка "Войти" занимает основное место */
+    background: var(--color-primary-accent);
+    color: var(--color-primary-accent-text);
+}
+
+.socialButton {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0; /* Чтобы иконки не сжимались */
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}

@@ -1,0 +1,9 @@
+.card {
+    background: var(--glass-background);
+    backdrop-filter: blur(10px); /* САМАЯ ГЛАВНАЯ МАГИЯ - размытие фона */
+    -webkit-backdrop-filter: blur(10px); /* Для поддержки Safari */
+    border-radius: var(--border-radius);
+    border: 1px solid var(--glass-border-color);
+    box-shadow: var(--shadow-glass);
+    padding: 30px;
+}

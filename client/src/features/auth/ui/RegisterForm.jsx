@@ -3,9 +3,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../shared/api/axios";
-
-// Мы можем переиспользовать те же стили, что и для LoginForm!
-import styles from "./LoginForm.module.css";
+import styles from "./Form.module.css";
 
 const RegisterForm = () => {
     const [username, setUsername] = useState("");
@@ -32,9 +30,7 @@ const RegisterForm = () => {
 
     return (
         <div className="card">
-            {" "}
-            {/* Используем общий класс .card для нойморфизма */}
-            <h2>Register</h2>
+            <h1>Register</h1>
             <form onSubmit={handleSubmit} className={styles.formContainer}>
                 <input
                     type="text"
