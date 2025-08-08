@@ -4,21 +4,20 @@ import { AuthProvider } from "./providers/AuthProvider";
 import Routes from "./routes/index";
 import "./styles/index.css";
 import Header from "../widgets/Header/ui/Header";
+import AuroraBG from "../shared/ui/AuroraBG/AuroraBG";
 
 const App = () => (
-    <>
-        {/* <AuroraBackground /> */}
-        <div className="app-layout">
-            <Router>
-                <AuthProvider>
-                    <Header />
-                    <main className="main-content">
-                        <Routes />
-                    </main>
-                </AuthProvider>
-            </Router>
-        </div>
-    </>
+    <Router>
+        <AuthProvider>
+            <AuroraBG colorStops={["#7cff67", "#b19eef", "#5227ff"]} blend={0.5} amplitude={1.0} speed={0.5} />
+            <div className="app-layout">
+                <Header />
+                <main className="main-content">
+                    <Routes />
+                </main>
+            </div>
+        </AuthProvider>
+    </Router>
 );
 
 export default React.memo(App);
