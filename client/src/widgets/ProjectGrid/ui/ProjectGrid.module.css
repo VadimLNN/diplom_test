@@ -1,0 +1,6 @@
+.grid {
+    display: grid;
+    /* Адаптивная сетка: минимум 300px, максимум 1fr (равные колонки) */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px; /* Расстояние между карточками */
+}

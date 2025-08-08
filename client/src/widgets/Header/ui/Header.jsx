@@ -22,12 +22,12 @@ const Header = () => {
                 {user ? (
                     // --- Меню для авторизованного пользователя ---
                     <>
-                        <span>Привет, {user.username}!</span>
+                        <span>Hi, {user.username}!</span>
                         <NavLink to="/settings" className={styles.navLink}>
-                            Настройки
+                            Settings
                         </NavLink>
                         <button onClick={handleLogout} className={styles.logoutButton}>
-                            Выйти
+                            Log out
                         </button>
                     </>
                 ) : (

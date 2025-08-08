@@ -68,6 +68,7 @@ body {
     width: 100%;
     display: flex; /* Позволяет центрировать дочерние страницы */
     flex-direction: column;
+    padding-top: 20px;
 }
 
 .page-container {
@@ -85,4 +86,16 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
+}
+
+/* Вынесем стиль кнопки в глобальные, чтобы переиспользовать */
+.btn-primary {
+    background: var(--color-primary-accent);
+    color: var(--color-primary-accent-text);
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--border-radius-pill);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
 }

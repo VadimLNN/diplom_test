@@ -1,0 +1,50 @@
+/* src/entities/project/ui/ProjectCard.module.css */
+.projectCard {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Чтобы все карточки в сетке были одной высоты */
+}
+
+.title {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.description {
+    flex-grow: 1; /* Занимает все доступное место, отодвигая футер вниз */
+    margin: 0 0 20px 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--glass-border-color);
+    padding-top: 15px;
+    margin-top: auto; /* Прилипает к низу карточки */
+}
+
+.date {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.openButton {
+    /* Можно будет заменить на <Button variant="secondary"> */
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-pill);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.openButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

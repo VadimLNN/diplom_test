@@ -1,22 +1,58 @@
-// import { ProjectGrid } from '../widgets/ProjectGrid'; // Будет позже
-// import { RecentDocuments } from '../widgets/RecentDocuments'; // Будет позже
+// src/pages/ProjectsDashboardPage.jsx
+import React, { useState, useEffect } from "react";
+import api from "./../shared/api/axios";
+import ProjectGrid from "./../widgets/ProjectGrid/ui/ProjectGrid";
+import styles from "./PageStyles.module.css";
+import CreateProjectForm from "../features/projects/create/ui/CreateProjectForm";
+import Modal from "../shared/ui/Modal/Modal";
 
 const ProjectsDashboardPage = () => {
+    const [projects, setProjects] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                setIsLoading(true);
+                const response = await api.get("/projects");
+                setProjects(response.data);
+            } catch (err) {
+                setError("Failed to fetch projects.");
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchProjects();
+    }, []);
+
+    const handleProjectCreated = (newProject) => {
+        setProjects((prevProjects) => [newProject, ...prevProjects]);
+        setIsModalOpen(false);
+    };
+
+    const handleOpenCreateModal = () => {
+        setIsModalOpen(true);
+    };
+
     return (
-        <div className="page-container">
-            <h2>Мои Проекты</h2>
-            <button>+ Создать проект</button>
-            <div style={{ display: "flex", gap: "20px" }}>
-                <div style={{ flex: 3 }}>
-                    <p>Здесь будет сетка проектов...</p>
-                    {/* <ProjectGrid /> */}
-                </div>
-                <div style={{ flex: 1, borderLeft: "1px solid #ccc", paddingLeft: "20px" }}>
-                    <h3>Последние документы</h3>
-                    <p>Здесь будет список последних документов...</p>
-                    {/* <RecentDocuments /> */}
-                </div>
+        <div className={styles.pageContainer}>
+            <div className={styles.pageHeader}>
+                <h1>My Projects</h1>
+                <button onClick={handleOpenCreateModal} className="btn-primary" style={{ margin: "0 auto 1rem" }}>
+                    + New Project
+                </button>
             </div>
+
+            {isLoading && <p>Loading projects...</p>}
+            {error && <p style={{ color: "red" }}>{error}</p>}
+
+            {!isLoading && !error && <ProjectGrid projects={projects} />}
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create a New Project">
+                <CreateProjectForm onSuccess={handleProjectCreated} />
+            </Modal>
         </div>
     );
 };
