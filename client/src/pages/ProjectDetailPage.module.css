@@ -1,0 +1,49 @@
+/* src/pages/ProjectDetailPage.module.css */
+.breadcrumbs {
+    margin-bottom: 20px;
+    color: var(--color-text-secondary);
+}
+
+.breadcrumbs a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.projectHeader h1 {
+    margin-top: 0;
+    font-size: 36px;
+}
+
+.projectHeader p {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+    max-width: 70ch; /* Ограничиваем ширину для лучшей читаемости */
+}
+
+.tabs {
+    margin: 40px 0 30px 0;
+    border-bottom: 1px solid var(--glass-border-color);
+    display: flex;
+    gap: 20px;
+}
+
+.tabButton {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    padding: 15px 10px;
+    font-size: 16px;
+    cursor: pointer;
+    position: relative;
+    bottom: -1px; /* Для красивого прилегания бордера */
+    border-bottom: 2px solid transparent;
+}
+
+.tabButton.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-text-primary);
+}

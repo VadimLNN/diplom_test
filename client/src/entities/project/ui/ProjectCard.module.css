@@ -2,7 +2,6 @@
 .projectCard {
     display: flex;
     flex-direction: column;
-    height: 100%; /* Чтобы все карточки в сетке были одной высоты */
 }
 
 .title {
@@ -18,6 +17,11 @@
     font-size: 14px;
     color: var(--color-text-secondary);
     line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Ограничиваем описание 3 строками */
+    -webkit-box-orient: vertical;
 }
 
 .footer {

@@ -22,6 +22,9 @@
     /* Стандартные размеры */
     --border-radius: 16px; /* Более выраженное скругление для "стекла" */
     --border-radius-pill: 50px;
+
+    /* Хедер */
+    --header-offset-top: 70px;
 }
 
 /* Обновляем body */
@@ -68,7 +71,7 @@ body {
     width: 100%;
     display: flex; /* Позволяет центрировать дочерние страницы */
     flex-direction: column;
-    padding-top: 20px;
+    padding-top: var(--header-offset-top);
 }
 
 .page-container {
