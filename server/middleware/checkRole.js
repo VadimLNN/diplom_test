@@ -5,20 +5,24 @@ const pool = require("../db");
  * Возвращает 'owner', 'editor', 'viewer' или null.
  */
 const getUserRoleInProject = async (userId, projectId) => {
+    // Добавим проверку на входе для надежности
+    if (!userId || !projectId) {
+        throw new Error("User ID or Project ID is missing");
+    }
     try {
         const ownerCheck = await pool.query("SELECT owner_id FROM projects WHERE id = $1", [projectId]);
-        if (ownerCheck.rows.length > 0 && ownerCheck.rows[0].owner_id === userId) {
+        if (ownerCheck.rows.length > 0 && ownerCheck.rows[0].owner_id == userId) {
             return "owner";
         }
-
         const permissionCheck = await pool.query("SELECT role FROM project_permissions WHERE project_id = $1 AND user_id = $2", [projectId, userId]);
         if (permissionCheck.rows.length > 0) {
             return permissionCheck.rows[0].role;
         }
-        return null;
+        return null; // Роль просто не найдена, это не ошибка
     } catch (error) {
-        console.error("Error in getUserRoleInProject:", error);
-        return null;
+        console.error("Database Error in getUserRoleInProject:", error);
+        // А вот это - ошибка, и о ней нужно сообщить
+        throw error;
     }
 };
 

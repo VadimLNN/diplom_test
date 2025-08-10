@@ -3,6 +3,8 @@ const permissionRepository = require("../repositories/permissionRepository");
 const userRepository = require("../repositories/userRepository"); // Нам понадобится для поиска по email
 const projectRepository = require("../repositories/projectRepository"); // Для проверки владельца
 
+const { getUserRoleInProject } = require("../middleware/checkRole");
+
 class PermissionService {
     async getProjectMembers(projectId) {
         const members = await permissionRepository.findMembers(projectId);
@@ -19,6 +21,12 @@ class PermissionService {
         });
 
         return Array.from(membersMap.values());
+    }
+
+    async getUserRole(userId, projectId) {
+        // Сервисный метод просто вызывает и возвращает результат
+        // нашей основной функции. Это сохраняет правильную архитектуру.
+        return getUserRoleInProject(userId, projectId);
     }
 
     async inviteUser(projectId, inviterId, { email, role }) {
