@@ -52,3 +52,21 @@
 .openButton:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+.deleteButton {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 5px;
+}
+.deleteButton:hover {
+    color: var(--color-danger);
+    background-color: rgba(220, 53, 69, 0.1);
+}

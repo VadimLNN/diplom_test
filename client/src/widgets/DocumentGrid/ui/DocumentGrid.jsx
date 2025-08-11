@@ -4,7 +4,7 @@ import DocumentCard from "../../../entities/document/ui/DocumentCard";
 // Переиспользуем стили от сетки проектов
 import gridStyles from "../../ProjectGrid/ui/ProjectGrid.module.css";
 
-const DocumentGrid = ({ documents }) => {
+const DocumentGrid = ({ documents, userRole, onDeleteDocument }) => {
     if (!documents || documents.length === 0) {
         return <p>No documents in this project yet.</p>;
     }

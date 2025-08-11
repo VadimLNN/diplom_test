@@ -2,16 +2,18 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../../../shared/ui/Card/Card";
-// Мы можем переиспользовать стили от ProjectCard, если они похожи!
 import cardStyles from "../../project/ui/ProjectCard.module.css";
 
-const DocumentCard = ({ document }) => {
+const DocumentCard = ({ document, userRole }) => {
     const navigate = useNavigate();
 
     const handleOpenDocument = () => {
-        // Пока не создали страницу редактора, можно оставить так
-        alert(`Opening document ${document.id}`);
-        // navigate(`/documents/${document.id}`);
+        navigate(`/documents/${document.id}`);
+    };
+
+    const handleDeleteDocument = () => {
+        // TODO: Вызвать функцию удаления, переданную через props
+        alert(`Deleting document ${document.id}`);
     };
 
     return (
@@ -20,9 +22,19 @@ const DocumentCard = ({ document }) => {
             <p className={cardStyles.description}>{document.content ? `${document.content.substring(0, 100)}...` : "This document is empty."}</p>
             <div className={cardStyles.footer}>
                 <span className={cardStyles.date}>Updated: {new Date(document.updated_at).toLocaleDateString()}</span>
-                <button onClick={handleOpenDocument} className={cardStyles.openButton}>
-                    Open
-                </button>
+                <div className={cardStyles.actions}>
+                    {" "}
+                    {/* Добавим обертку для кнопок */}
+                    {/* Показываем кнопку удаления только тем, у кого есть права */}
+                    {(userRole === "owner" || userRole === "editor") && (
+                        <button onClick={handleDeleteDocument} className={cardStyles.deleteButton}>
+                            Delete
+                        </button>
+                    )}
+                    <button onClick={handleOpenDocument} className={cardStyles.openButton}>
+                        {userRole === "owner" || userRole === "editor" ? "Edit" : "View"}
+                    </button>
+                </div>
             </div>
         </Card>
     );

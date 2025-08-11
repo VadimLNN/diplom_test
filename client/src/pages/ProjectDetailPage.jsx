@@ -25,7 +25,6 @@ const ProjectDetailPage = () => {
 
     const [isCreateDocModalOpen, setIsCreateDocModalOpen] = useState(false);
 
-    // --- НОВАЯ, УПРОЩЕННАЯ ЛОГИКА ЗАГРУЗКИ ---
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -81,9 +80,19 @@ const ProjectDetailPage = () => {
         setIsCreateDocModalOpen(false);
     };
 
+    const handleDeleteDocument = async (documentId) => {
+        if (window.confirm("Are you sure you want to delete this document?")) {
+            try {
+                await api.delete(`/documents/${documentId}`);
+                setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== documentId));
+            } catch (err) {
+                alert(err.response?.data?.error || "Failed to delete document.");
+            }
+        }
+    };
+
     return (
-        <div className={pageStyles.pageContainer}>
-            {/* --- ХЛЕБНЫЕ КРОШКИ И ЗАГОЛОВОК (без изменений) --- */}
+        <div className={`${pageStyles.pageContainer} ${styles.editorLayout}`}>
             <div className={styles.breadcrumbs}>
                 <Link to="/projects">My Projects</Link> / {project.name}
             </div>
@@ -93,7 +102,6 @@ const ProjectDetailPage = () => {
                 <p>{project.description}</p>
             </header>
 
-            {/* --- ВКЛАДКИ (без изменений) --- */}
             <div className={styles.tabs}>
                 <button className={`${styles.tabButton} ${activeTab === "documents" ? styles.active : ""}`} onClick={() => setActiveTab("documents")}>
                     Documents
@@ -111,35 +119,24 @@ const ProjectDetailPage = () => {
                 )}
             </div>
 
-            {/* --- КОНТЕНТ ВКЛАДОК (ОБНОВЛЕННЫЙ) --- */}
             <div className={styles.tabContent}>
-                {/* --- ВКЛАДКА "ДОКУМЕНТЫ" --- */}
                 {activeTab === "documents" && (
                     <div>
-                        {/* Кнопка теперь открывает модальное окно */}
                         {(userRole === "owner" || userRole === "editor") && (
                             <button onClick={() => setIsCreateDocModalOpen(true)} className="btn-primary" style={{ marginBottom: "20px" }}>
                                 + New Document
                             </button>
                         )}
-                        <DocumentGrid documents={documents} />
+                        <DocumentGrid documents={documents} userRole={userRole} onDeleteDocument={handleDeleteDocument} />
                     </div>
                 )}
 
-                {/* --- ВКЛАДКА "УЧАСТНИКИ" --- */}
                 {activeTab === "members" && <ProjectMembers projectId={projectId} userRole={userRole} />}
 
-                {/* --- ВКЛАДКА "НАСТРОЙКИ" --- */}
-                {activeTab === "settings" && userRole === "owner" && (
-                    // Рендерим новый компонент настроек
-                    <ProjectSettings project={project} />
-                )}
+                {activeTab === "settings" && userRole === "owner" && <ProjectSettings project={project} />}
             </div>
 
-            {/* --- МОДАЛЬНОЕ ОКНО ДЛЯ СОЗДАНИЯ ДОКУМЕНТА --- */}
-            {/* Оно находится вне вкладок, чтобы отображаться поверх всего */}
             <Modal isOpen={isCreateDocModalOpen} onClose={() => setIsCreateDocModalOpen(false)} title="Create a New Document">
-                {/* Предполагается, что вы создали компонент CreateDocumentForm */}
                 <CreateDocumentForm projectId={projectId} onSuccess={handleDocumentCreated} />
             </Modal>
         </div>

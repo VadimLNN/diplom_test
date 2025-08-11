@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { socket } from "../../../../shared/api/socket";
+import styles from "./CollaborativeEditor.module.css";
 
-const CollaborativeEditor = ({ documentId, onSave }) => {
+const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
     const [content, setContent] = useState("Loading content...");
     const [isConnected, setIsConnected] = useState(socket.connected);
     const saveTimeoutRef = useRef(null);
 
-    // --- Загрузка контента (остается без изменений) ---
     useEffect(() => {
         console.log(`[EDITOR] useEffect with fetch triggered for documentId: ${documentId}`);
         let isMounted = true;
@@ -62,7 +62,6 @@ const CollaborativeEditor = ({ documentId, onSave }) => {
         };
     }, [documentId]);
 
-    // --- УПРАВЛЕНИЕ СОКЕТАМИ (ИСПРАВЛЕННАЯ ВЕРСИЯ) ---
     useEffect(() => {
         // Функция для установки слушателей
         const setupSocketListeners = () => {
@@ -124,15 +123,19 @@ const CollaborativeEditor = ({ documentId, onSave }) => {
     };
 
     return (
-        <div>
-            <div style={{ marginBottom: "10px" }}>
-                Status: {isConnected ? <span style={{ color: "green" }}>Connected</span> : <span style={{ color: "red" }}>Disconnected</span>}
+        <div className={styles.editorWrapper}>
+            <div className={styles.status}>
+                Status:
+                <span className={isConnected ? styles.statusConnected : styles.statusDisconnected}>
+                    {isConnected ? " Connected" : " Disconnected"}
+                </span>
             </div>
             <textarea
+                className={styles.textarea}
                 value={content}
                 onChange={handleChange}
-                className="collaborative-textarea" // Стилизуйте по вкусу
-                rows="20"
+                readOnly={isReadOnly}
+                placeholder="Start writing your masterpiece..."
             />
         </div>
     );

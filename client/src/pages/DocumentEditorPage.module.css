@@ -1,0 +1,47 @@
+.editorLayout {
+    display: flex;
+    flex-direction: column;
+    /* Заставляем его занять всю доступную высоту внутри .page-container */
+    flex-grow: 1;
+    /* Важно: убираем padding, чтобы не мешать дочерним элементам */
+    padding: 0 !important;
+}
+
+.editorHeader {
+    flex-shrink: 0; /* Хедер не сжимается */
+    padding: 20px 40px; /* Добавляем отступы здесь */
+    border-bottom: 1px solid var(--glass-border-color);
+}
+
+.breadcrumbs {
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.breadcrumbs a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+}
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+.breadcrumbs span {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+/* Контейнер для редактора, заставляем его расти */
+.editorContent {
+    flex-grow: 1; /* Растет, чтобы занять все место после хедера */
+
+    /* Это нужно, чтобы .editorWrapper внутри мог использовать height: 100% */
+    display: flex;
+    flex-direction: column;
+
+    /* Добавляем отступы здесь, а не у родителя */
+    padding: 20px 40px 40px 40px;
+    box-sizing: border-box;
+}

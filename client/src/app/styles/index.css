@@ -27,18 +27,6 @@
     --header-offset-top: 70px;
 }
 
-/* Обновляем body */
-body {
-    margin: 0;
-    font-family: var(--font-family-base);
-    background-color: var(--color-background);
-    color: var(--color-text-primary); /* Основной текст теперь яркий */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-}
-
 html,
 body,
 #root {
@@ -67,11 +55,14 @@ body {
 
 /* Контейнер для основного контента страницы */
 .main-content {
-    flex-grow: 1; /* Занимает все доступное пространство после хедера */
+    flex-grow: 1; /* Растет, чтобы занять место */
     width: 100%;
-    display: flex; /* Позволяет центрировать дочерние страницы */
+    display: flex;
     flex-direction: column;
     padding-top: var(--header-offset-top);
+    box-sizing: border-box; /* Чтобы padding не ломал высоту */
+    /* !!! ВАЖНО: Добавим overflow, если контент не влезет */
+    overflow-y: auto;
 }
 
 .page-container {
@@ -80,6 +71,12 @@ body {
     padding: 40px;
     margin: 0 auto;
     box-sizing: border-box;
+
+    /* --- ГЛАВНЫЙ ФИКС №1 --- */
+    /* Контейнер должен уметь расти */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .page-centered {
