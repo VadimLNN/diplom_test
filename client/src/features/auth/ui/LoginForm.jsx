@@ -3,6 +3,7 @@ import { React, useState } from "react";
 import styles from "./Form.module.css"; // Импортируем стили как модуль
 import { useAuth } from "../../../app/providers/AuthProvider"; // Раскомментируете, когда будете подключать логику
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const LoginForm = () => {
     const [username, setUsername] = useState("");
@@ -12,13 +13,18 @@ const LoginForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await login({ username, password });
-            navigate("/projects");
-        } catch (error) {
-            console.error("Login failed", error);
-        }
-        console.log("Form submitted!");
+
+        await toast.promise(
+            login({ username, password }), // Вызываем функцию login из useAuth
+            {
+                loading: "Logging in...",
+                success: (response) => {
+                    navigate("/projects");
+                    return <b>Welcome back!</b>;
+                },
+                error: (err) => <b>{err.response?.data?.error || "Login failed!"}</b>,
+            }
+        );
     };
 
     return (

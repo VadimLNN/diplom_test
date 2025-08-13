@@ -5,6 +5,7 @@ import api from "../../../../shared/api/axios";
 import Card from "../../../../shared/ui/Card/Card";
 import formStyles from "../../../auth/ui/Form.module.css"; // Переиспользуем стили
 import styles from "./ProjectSettings.module.css";
+import toast from "react-hot-toast";
 
 const ProjectSettings = ({ project }) => {
     const [name, setName] = useState(project.name);
@@ -13,24 +14,48 @@ const ProjectSettings = ({ project }) => {
 
     const handleUpdate = async (e) => {
         e.preventDefault();
-        try {
-            await api.put(`/projects/${project.id}`, { name, description });
-            alert("Project updated successfully!");
-        } catch (error) {
-            alert(error.response?.data?.error || "Failed to update project.");
-        }
+        await toast.promise(api.put(`/projects/${project.id}`, { name, description }), {
+            loading: "Saving changes...",
+            success: <b>Project updated successfully!</b>,
+            error: (err) => <b>{err.response?.data?.error || "Failed to update project."}</b>,
+        });
     };
 
     const handleDelete = async () => {
-        if (window.confirm(`Are you sure you want to delete the project "${project.name}"? This action cannot be undone.`)) {
-            try {
-                await api.delete(`/projects/${project.id}`);
-                alert("Project deleted successfully.");
-                navigate("/projects"); // Возвращаем на главную после удаления
-            } catch (error) {
-                alert(error.response?.data?.error || "Failed to delete project.");
+        toast(
+            (t) => (
+                <div className="toast-container">
+                    <span>
+                        Delete <b>"{project.name}"</b>?
+                    </span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                        <button className="toast-button toast-button-cancel" onClick={() => toast.dismiss(t.id)}>
+                            Cancel
+                        </button>
+                        <button
+                            className="toast-button toast-button-confirm"
+                            onClick={() => {
+                                toast.dismiss(t.id);
+                                toast.promise(api.delete(`/projects/${project.id}`), {
+                                    loading: `Deleting project...`,
+                                    success: () => {
+                                        navigate("/projects");
+                                        return <b>Project has been deleted.</b>;
+                                    },
+                                    error: (err) => <b>{err.response?.data?.error || "Failed to delete project."}</b>,
+                                });
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                duration: 10000,
+                icon: "⚠️",
             }
-        }
+        );
     };
 
     return (

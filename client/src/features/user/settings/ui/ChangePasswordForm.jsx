@@ -2,23 +2,24 @@ import React, { useState } from "react";
 import api from "../../../../shared/api/axios";
 import Card from "../../../../shared/ui/Card/Card";
 import formStyles from "../../../auth/ui/Form.module.css";
+import toast from "react-hot-toast";
 
 const ChangePasswordForm = () => {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
-    const [message, setMessage] = useState("");
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage("");
-        try {
-            await api.put("/auth/change-password", { currentPassword, newPassword });
-            setMessage({ text: "Password changed successfully!", type: "success" });
-            setCurrentPassword("");
-            setNewPassword("");
-        } catch (error) {
-            setMessage({ text: error.response?.data?.error || "Failed to change password.", type: "error" });
-        }
+
+        await toast.promise(api.put("/auth/change-password", { currentPassword, newPassword }), {
+            loading: "Updating password...",
+            success: () => {
+                setCurrentPassword("");
+                setNewPassword("");
+                return <b>Password updated successfully!</b>;
+            },
+            error: (err) => <b>{err.response?.data?.error || "Failed to change password."}</b>,
+        });
     };
 
     return (
@@ -44,7 +45,6 @@ const ChangePasswordForm = () => {
                 <button type="submit" className={`${formStyles.button} ${formStyles.primaryButton}`}>
                     Update Password
                 </button>
-                {message && <p style={{ color: message.type === "success" ? "green" : "red" }}>{message.text}</p>}
             </form>
         </Card>
     );

@@ -4,28 +4,25 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../shared/api/axios";
 import styles from "./Form.module.css";
+import toast from "react-hot-toast";
 
 const RegisterForm = () => {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [message, setMessage] = useState("");
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage(""); // Сбрасываем сообщение перед новым запросом
-        try {
-            await api.post("/auth/register", { username, email, password });
-            setMessage("Registration successful! Redirecting to login...");
 
-            // Даем пользователю 2 секунды, чтобы прочитать сообщение, потом перенаправляем
-            setTimeout(() => {
-                navigate("/login");
-            }, 2000);
-        } catch (error) {
-            setMessage(error.response?.data?.error || "Registration failed");
-        }
+        await toast.promise(api.post("/auth/register", { username, email, password }), {
+            loading: "Registering...",
+            success: (response) => {
+                setTimeout(() => navigate("/login"), 1500);
+                return <b>Registration successful! Redirecting...</b>;
+            },
+            error: (err) => <b>{err.response?.data?.error || "Registration failed"}</b>,
+        });
     };
 
     return (
@@ -54,7 +51,6 @@ const RegisterForm = () => {
                     Зарегистрироваться
                 </button>
             </form>
-            {message && <p className={`message ${message.includes("successful") ? "success" : "error"}`}>{message}</p>}
         </div>
     );
 };

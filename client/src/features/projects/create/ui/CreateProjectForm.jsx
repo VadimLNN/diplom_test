@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import api from "../../../../shared/api/axios";
 import formStyles from "./CreateProjectForm.module.css"; // Переиспользуем стили
+import toast from "react-hot-toast";
 
 const CreateProjectForm = ({ onSuccess }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [error, setError] = useState("");
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const response = await api.post("/projects", { name, description });
-            onSuccess(response.data); // Вызываем коллбэк при успехе
+            toast.success("Project created successfully!");
+            onSuccess(response.data); // Вызываем коллбэк для родителя
         } catch (err) {
-            setError(err.response?.data?.error || "Failed to create project");
+            const errorMessage = err.response?.data?.errors?.[0]?.msg || err.response?.data?.error || "Failed to create project";
+            toast.error(errorMessage);
         }
     };
 
@@ -38,7 +40,6 @@ const CreateProjectForm = ({ onSuccess }) => {
             <button type="submit" className={`${formStyles.button} ${formStyles.primaryButton}`}>
                 Create
             </button>
-            {error && <p style={{ color: "red" }}>{error}</p>}
         </form>
     );
 };
