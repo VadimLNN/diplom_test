@@ -152,4 +152,117 @@ router.get("/user", authMiddleware, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   put:
+ *     summary: Смена пароля для текущего пользователя
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *                 description: Текущий (старый) пароль пользователя.
+ *                 example: password123
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 description: Новый пароль (минимум 6 символов).
+ *                 example: newSecurePassword456
+ *     responses:
+ *       '200':
+ *         description: Пароль успешно обновлен.
+ *       '400':
+ *         description: Ошибка валидации (например, новый пароль слишком короткий).
+ *       '401':
+ *         description: Неверный текущий пароль.
+ */
+router.put(
+    "/change-password",
+    authMiddleware, // Пользователь должен быть авторизован
+    body("currentPassword").notEmpty().withMessage("Current password is required"),
+    body("newPassword").isLength({ min: 6 }).withMessage("New password must be at least 6 characters long"),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const userId = req.user.id;
+            const { currentPassword, newPassword } = req.body;
+
+            // Вызываем новый метод сервиса для смены пароля
+            await authService.changePassword(userId, currentPassword, newPassword);
+
+            res.status(200).json({ message: "Password updated successfully." });
+        } catch (error) {
+            res.status(error.statusCode || 500).json({ error: error.message });
+        }
+    }
+);
+
+/**
+ * @swagger
+ * /api/auth/delete-account:
+ *   delete:
+ *     summary: Удаление аккаунта текущего пользователя
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Текущий пароль для подтверждения удаления.
+ *                 example: password123
+ *     responses:
+ *       '200':
+ *         description: Аккаунт и все связанные с ним данные успешно удалены.
+ *       '401':
+ *         description: Неверный пароль для подтверждения.
+ */
+router.delete(
+    "/delete-account",
+    authMiddleware, // Пользователь должен быть авторизован
+    body("password").notEmpty().withMessage("Password is required for confirmation"),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        try {
+            const userId = req.user.id;
+            const { password } = req.body;
+
+            // Вызываем новый метод сервиса для удаления
+            await authService.deleteAccount(userId, password);
+
+            res.status(200).json({ message: "Account deleted successfully." });
+        } catch (error) {
+            res.status(error.statusCode || 500).json({ error: error.message });
+        }
+    }
+);
+
 module.exports = router;

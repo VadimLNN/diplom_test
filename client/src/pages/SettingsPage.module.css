@@ -1,0 +1,6 @@
+.settingsLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    max-width: 600px; /* Ограничиваем ширину для удобства */
+}
