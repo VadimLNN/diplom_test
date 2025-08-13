@@ -56,6 +56,45 @@ class AuthService {
     async getUserInfo(userId) {
         return userRepository.findById(userId);
     }
+
+    async changePassword(userId, currentPassword, newPassword) {
+        const user = await userRepository.findUserWithPassword(userId); // Нужен метод, возвращающий хеш
+        if (!user) {
+            const error = new Error("User not found.");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            const error = new Error("Incorrect current password.");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        await userRepository.updatePassword(userId, hashedNewPassword);
+    }
+
+    async deleteAccount(userId, password) {
+        const user = await userRepository.findUserWithPassword(userId);
+        if (!user) {
+            const error = new Error("User not found.");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            const error = new Error("Incorrect password. Account deletion failed.");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        // ВАЖНО: При удалении пользователя нужно каскадно удалить его проекты
+        // Это можно настроить в БД (ON DELETE CASCADE) или сделать здесь явно
+        await userRepository.deleteById(userId);
+    }
 }
 
 module.exports = new AuthService();
