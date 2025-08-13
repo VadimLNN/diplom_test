@@ -3,14 +3,16 @@ import React from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import styles from "./Header.module.css";
+import toast from "react-hot-toast";
 
 const Header = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout(); // Вызываем функцию logout из AuthContext
-        navigate("/login"); // Перенаправляем на страницу входа
+        logout();
+        toast.success("You have been logged out.");
+        navigate("/login");
     };
 
     return (

@@ -5,6 +5,7 @@ import Routes from "./routes/index";
 import "./styles/index.css";
 import Header from "../widgets/Header/ui/Header";
 import AuroraBG from "../shared/ui/AuroraBG/AuroraBG";
+import { Toaster } from "react-hot-toast";
 
 const App = () => (
     <Router>
@@ -15,6 +16,15 @@ const App = () => (
                 <main className="main-content">
                     <Routes />
                 </main>
+                <Toaster
+                    position="bottom-right"
+                    toastOptions={{
+                        style: {
+                            background: "#333",
+                            color: "#fff",
+                        },
+                    }}
+                />
             </div>
         </AuthProvider>
     </Router>
