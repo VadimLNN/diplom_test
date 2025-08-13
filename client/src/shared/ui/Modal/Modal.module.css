@@ -1,0 +1,46 @@
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    width: 90%;
+    max-width: 500px;
+    /* Используем стили стекла! */
+    background: var(--glass-background);
+    border: 1px solid var(--glass-border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--glass-shadow);
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.header h2 {
+    margin: 0;
+}
+.closeButton {
+    color: red;
+}
+
+.body {
+    /* Просто убираем все лишние отступы.
+       Теперь компонент ВНУТРИ модалки (наша форма) будет сам решать,
+       какие у него должны быть отступы. */
+    padding: 0;
+}

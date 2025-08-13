@@ -80,9 +80,19 @@ router.get("/", checkProjectAccess, async (req, res) => {
 router.get("/my-role", checkProjectAccess, async (req, res) => {
     try {
         const role = await permissionService.getUserRole(req.user.id, req.params.projectId);
-        res.json({ role });
+
+        // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+        if (role) {
+            res.json({ role });
+        } else {
+            // Эта ситуация странная (checkProjectAccess прошел, а роль не нашли),
+            // но мы должны ее обработать.
+            res.status(404).json({ error: "Role for this user in this project not found." });
+        }
     } catch (error) {
-        res.status(500).json({ error: "Could not determine user role." });
+        // Сюда мы попадем, если getUserRoleInProject выбросит ошибку
+        console.error("Error in /my-role route:", error);
+        res.status(500).json({ error: "Could not determine user role due to a server error." });
     }
 });
 

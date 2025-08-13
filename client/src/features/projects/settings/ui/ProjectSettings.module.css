@@ -1,0 +1,19 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+.dangerZoneTitle {
+    color: var(--color-danger);
+    margin-top: 0;
+}
+.dangerZoneContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--glass-border-color);
+    padding-top: 20px;
+}
+.deleteButton {
+    color: red;
+}

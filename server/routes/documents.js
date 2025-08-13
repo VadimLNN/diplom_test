@@ -75,13 +75,23 @@ router.get("/project/:projectId", checkProjectAccess, async (req, res) => {
 // GET /api/documents/:id
 router.get("/:id", async (req, res) => {
     try {
+        // 1. Получаем документ
         const document = await documentService.getDocumentById(req.params.id);
-        if (!document) return res.status(404).json({ error: "Document not found" });
+        if (!document) {
+            return res.status(404).json({ error: "Document not found" });
+        }
 
-        // Проверяем доступ к проекту, в котором находится документ
-        req.params.projectId = document.project_id;
-        checkProjectAccess(req, res, () => res.json(document));
+        // 2. Явно вызываем логику проверки доступа для проекта этого документа
+        // Мы передаем `req`, чтобы `checkProjectAccess` мог взять `req.user`
+        // Но мы подменяем `req.params`, чтобы он взял правильный `projectId`
+        const fakeReq = { user: req.user, params: { projectId: document.project_id } };
+
+        await checkProjectAccess(fakeReq, res, () => {
+            // 3. Если `checkProjectAccess` вызвал `next()`, значит, доступ есть
+            res.json(document);
+        });
     } catch (error) {
+        console.error("Error in GET /documents/:id :", error);
         res.status(500).json({ error: "Server error" });
     }
 });

@@ -1,0 +1,82 @@
+.header {
+    /* Позиционирование: "плавающий" блок */
+    position: fixed; /* Отрываем от потока, чтобы он висел над контентом */
+    top: 20px; /* Отступ сверху */
+    left: 50%;
+    transform: translateX(-50%); /* Идеальное центрирование по горизонтали */
+    width: 95%;
+    max-width: 1200px; /* Ограничиваем максимальную ширину на больших экранах */
+    z-index: 100; /* Убеждаемся, что хедер всегда поверх всего */
+
+    /* Стили Glassmorphism */
+    background: var(--glass-background, rgba(35, 35, 45, 0.5));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--border-radius-pill, 50px);
+    border: 1px solid var(--glass-border-color, rgba(255, 255, 255, 0.1));
+    box-shadow: var(--glass-shadow, 0 8px 32px 0 rgba(0, 0, 0, 0.37));
+
+    /* Внутренняя компоновка */
+    padding: 10px 30px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo a {
+    font-size: 20px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--color-text-primary, #f0f0f0);
+}
+
+/* Стили для иконки (можно вставить SVG) */
+.logo span {
+    font-size: 24px;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.navLink {
+    text-decoration: none;
+    color: var(--color-text-secondary, #a0a0a0);
+    font-size: 16px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.navLink:hover,
+.navLink.active {
+    color: var(--color-text-primary, #f0f0f0);
+}
+
+.userActions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logoutButton {
+    /* Стили для кнопки выхода можно сделать более минималистичными */
+    background: none;
+    border: none;
+    color: var(--color-text-secondary, #a0a0a0);
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.2s;
+}
+
+.logoutButton:hover {
+    color: var(--color-danger, #dc3545);
+}

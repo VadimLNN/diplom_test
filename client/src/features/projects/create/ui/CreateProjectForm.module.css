@@ -1,0 +1,64 @@
+/* src/features/project/create/ui/CreateProjectForm.module.css */
+
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* --- ШАГ 1: Копируем базовый стиль для полей --- */
+/* Мы берем его из LoginForm.module.css и делаем его общим */
+.formField {
+    height: 50px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border-color);
+    padding: 0 20px;
+    font-size: 16px;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease-in-out;
+    box-sizing: border-box; /* Важно для правильных размеров */
+    width: 100%;
+}
+
+.formField::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.formField:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* --- ШАГ 2: Создаем классы-модификаторы --- */
+
+/* Класс для полей с круглыми краями (как в Login) */
+.inputPill {
+    border-radius: var(--border-radius-pill);
+}
+
+/* Класс для textarea с обычным скруглением */
+.textareaField {
+    border-radius: var(--border-radius);
+    height: auto; /* Высота будет определяться атрибутом rows */
+    padding-top: 15px;
+    padding-bottom: 15px;
+    resize: vertical;
+}
+
+/* --- Стили для кнопки (можно тоже вынести в shared/ui/Button) --- */
+.button {
+    height: 50px;
+    border: none;
+    border-radius: var(--border-radius-pill);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--color-primary-accent);
+    color: var(--color-primary-accent-text);
+    transition: transform 0.1s ease;
+}
+
+.button:active {
+    transform: scale(0.98);
+}

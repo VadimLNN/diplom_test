@@ -1,0 +1,17 @@
+.pageContainer {
+    width: 100%;
+    max-width: 1200px;
+    padding: 40px;
+    margin: 0 auto; /* Центрирует контейнер по горизонтали внутри <main> */
+    box-sizing: border-box;
+}
+
+/* Этот класс отвечает за вертикальное центрирование содержимого */
+.pageCentered {
+    flex-grow: 1; /* Позволяет контейнеру занять всю высоту родителя (<main>) */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Центрирует по вертикали */
+    align-items: center; /* Центрирует по горизонтали */
+    text-align: center;
+}

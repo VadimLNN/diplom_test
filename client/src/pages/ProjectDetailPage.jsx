@@ -1,146 +1,146 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../shared/api/axios";
+// src/pages/ProjectDetailPage.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, Link } from "react-router-dom";
+import api from "./../shared/api/axios";
+import ProjectMembers from "./../features/projects/manage-members/ui/ProjectMembers";
+import ProjectSettings from "./../features/projects/settings/ui/ProjectSettings";
+import DocumentGrid from "./../widgets/DocumentGrid/ui/DocumentGrid";
+import Modal from "./../shared/ui/Modal/Modal";
+import CreateDocumentForm from "../features/document/create/ui/CreateDocumentForm";
 
-const List = () => {
-    const navigate = useNavigate();
-    const [projects, setProjects] = useState([]);
+// Импортируем стили
+import pageStyles from "./PageStyles.module.css";
+import styles from "./ProjectDetailPage.module.css"; // Стили для этой страницы
+
+const ProjectDetailPage = () => {
+    const { projectId } = useParams();
+    const [activeTab, setActiveTab] = useState("documents");
+
+    // Состояния
+    const [project, setProject] = useState(null);
+    const [documents, setDocuments] = useState([]);
+    const [userRole, setUserRole] = useState(null); // Роль нам все еще нужна для UI
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
-    const [newProject, setNewProject] = useState({ name: "", description: "" });
-    const [editProject, setEditProject] = useState(null);
+
+    const [isCreateDocModalOpen, setIsCreateDocModalOpen] = useState(false);
+
+    const fetchData = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError("");
+
+            // Шаг 1: Загружаем основные данные проекта. Если этот запрос падает, дальше не идем.
+            const projectRes = await api.get(`/projects/${projectId}`);
+            setProject(projectRes.data);
+
+            // Шаг 2: Загружаем документы.
+            const docsRes = await api.get(`/documents/project/${projectId}`);
+            setDocuments(docsRes.data);
+
+            // Шаг 3: Загружаем роль.
+            // Если этот эндпоинт не работает, мы можем его "заглушить" или обработать ошибку.
+            try {
+                const roleRes = await api.get(`/projects/${projectId}/permissions/my-role`);
+                setUserRole(roleRes.data.role);
+            } catch (roleError) {
+                console.warn("Could not fetch user role, defaulting to 'viewer'.");
+                // Если не удалось получить роль, временно считаем пользователя наблюдателем,
+                // чтобы интерфейс не ломался.
+                setUserRole("viewer");
+            }
+        } catch (err) {
+            setError("Failed to load project data. You may not have permission.");
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [projectId]);
 
     useEffect(() => {
-        const fetchProjects = async () => {
+        fetchData();
+    }, [fetchData]);
+
+    // --- Обработка состояний загрузки и ошибок ---
+    if (isLoading)
+        return (
+            <div className={pageStyles.pageContainer}>
+                <p>Loading project...</p>
+            </div>
+        );
+    if (error)
+        return (
+            <div className={pageStyles.pageContainer}>
+                <p style={{ color: "red" }}>{error}</p>
+            </div>
+        );
+
+    const handleDocumentCreated = (newDocument) => {
+        setDocuments((prevDocs) => [newDocument, ...prevDocs]);
+        setIsCreateDocModalOpen(false);
+    };
+
+    const handleDeleteDocument = async (documentId) => {
+        if (window.confirm("Are you sure you want to delete this document?")) {
             try {
-                const response = await api.get("/projects");
-                setProjects(response.data);
-                setError("");
-            } catch (error) {
-                setError(error.response?.data?.error || "Failed to fetch projects");
+                await api.delete(`/documents/${documentId}`);
+                setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== documentId));
+            } catch (err) {
+                alert(err.response?.data?.error || "Failed to delete document.");
             }
-        };
-        fetchProjects();
-    }, []);
-
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await api.post("/projects", newProject);
-            setProjects([...projects, response.data]);
-            setNewProject({ name: "", description: "" });
-            setError("");
-        } catch (error) {
-            setError(error.response?.data?.error || "Creation failed");
         }
-    };
-
-    const handleUpdate = async (id) => {
-        try {
-            const response = await api.put(`/projects/${id}`, editProject);
-            setProjects(projects.map((p) => (p.id === id ? response.data : p)));
-            setEditProject(null);
-            setError("");
-        } catch (error) {
-            setError(error.response?.data?.error || "Update failed");
-        }
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await api.delete(`/projects/${id}`);
-            setProjects(projects.filter((p) => p.id !== id));
-            setError("");
-        } catch (error) {
-            setError(error.response?.data?.error || "Deletion failed");
-        }
-    };
-
-    const handleOpen = (projectId) => {
-        navigate(`/projects/${projectId}`);
     };
 
     return (
-        <div className="container">
-            <h1>Projects Page</h1>
-            {error && <div className="message error">{error}</div>}
-
-            {/* Форма создания */}
-            <div className="card">
-                <h2>Create Project</h2>
-                <form onSubmit={handleCreate} className="form">
-                    <input
-                        value={newProject.name}
-                        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                        placeholder="Name"
-                        required
-                    />
-                    <input
-                        value={newProject.description}
-                        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                        placeholder="Description"
-                    />
-                    <button type="submit" className="btn btn-primary">
-                        Create
-                    </button>
-                </form>
+        <div className={`${pageStyles.pageContainer} ${styles.editorLayout}`}>
+            <div className={styles.breadcrumbs}>
+                <Link to="/projects">My Projects</Link> / {project.name}
             </div>
 
-            {/* Список проектов */}
-            <div className="project-grid">
-                {projects.length === 0 ? (
-                    <p>No projects yet</p>
-                ) : (
-                    projects.map((project) => (
-                        <div key={project.id} className="card project-card">
-                            {editProject && editProject.id === project.id ? (
-                                <form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleUpdate(project.id);
-                                    }}
-                                    className="form"
-                                >
-                                    <input
-                                        value={editProject.name}
-                                        onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
-                                        required
-                                    />
-                                    <input
-                                        value={editProject.description}
-                                        onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
-                                    />
-                                    <div className="project-actions">
-                                        <button type="submit" className="btn btn-primary">
-                                            Save
-                                        </button>
-                                        <button type="button" className="btn btn-secondary" onClick={() => setEditProject(null)}>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <div>
-                                    <h3>{project.name}</h3>
-                                    <p>{project.description}</p>
-                                    <div className="project-actions">
-                                        <button className="btn btn-secondary" onClick={() => setEditProject(project)}>
-                                            Edit
-                                        </button>
-                                        <button className="btn btn-danger" onClick={() => handleDelete(project.id)}>
-                                            Delete
-                                        </button>
-                                        <button className="btn btn-primary" onClick={() => handleOpen(project.id)}>
-                                            Open
-                                        </button>{" "}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ))
+            <header className={styles.projectHeader}>
+                <h1>{project.name}</h1>
+                <p>{project.description}</p>
+            </header>
+
+            <div className={styles.tabs}>
+                <button className={`${styles.tabButton} ${activeTab === "documents" ? styles.active : ""}`} onClick={() => setActiveTab("documents")}>
+                    Documents
+                </button>
+                <button className={`${styles.tabButton} ${activeTab === "members" ? styles.active : ""}`} onClick={() => setActiveTab("members")}>
+                    Members
+                </button>
+                {userRole === "owner" && (
+                    <button
+                        className={`${styles.tabButton} ${activeTab === "settings" ? styles.active : ""}`}
+                        onClick={() => setActiveTab("settings")}
+                    >
+                        Settings
+                    </button>
                 )}
             </div>
+
+            <div className={styles.tabContent}>
+                {activeTab === "documents" && (
+                    <div>
+                        {(userRole === "owner" || userRole === "editor") && (
+                            <button onClick={() => setIsCreateDocModalOpen(true)} className="btn-primary" style={{ marginBottom: "20px" }}>
+                                + New Document
+                            </button>
+                        )}
+                        <DocumentGrid documents={documents} userRole={userRole} onDeleteDocument={handleDeleteDocument} />
+                    </div>
+                )}
+
+                {activeTab === "members" && <ProjectMembers projectId={projectId} userRole={userRole} />}
+
+                {activeTab === "settings" && userRole === "owner" && <ProjectSettings project={project} />}
+            </div>
+
+            <Modal isOpen={isCreateDocModalOpen} onClose={() => setIsCreateDocModalOpen(false)} title="Create a New Document">
+                <CreateDocumentForm projectId={projectId} onSuccess={handleDocumentCreated} />
+            </Modal>
         </div>
     );
 };
 
-export default React.memo(List);
+export default ProjectDetailPage;
