@@ -51,7 +51,7 @@ const ProjectsDashboardPage = () => {
 
             {!isLoading && !error && <ProjectGrid projects={projects} />}
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create a New Project">
-                <CreateProjectForm onSuccess={handleProjectCreated} />
+                <CreateProjectForm onSuccess={handleProjectCreated} isOpen={isModalOpen} />
             </Modal>
         </div>
     );

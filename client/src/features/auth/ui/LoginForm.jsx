@@ -1,5 +1,5 @@
 // src/features/auth/ui/LoginForm.jsx
-import { React, useState } from "react";
+import { React, useState, useEffect, useRef } from "react";
 import styles from "./Form.module.css"; // Импортируем стили как модуль
 import { useAuth } from "../../../app/providers/AuthProvider"; // Раскомментируете, когда будете подключать логику
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,14 @@ const LoginForm = () => {
     const [password, setPassword] = useState("");
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    const usernameInputRef = useRef(null);
+
+    useEffect(() => {
+        if (usernameInputRef.current) {
+            usernameInputRef.current.focus();
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,6 +40,7 @@ const LoginForm = () => {
             <h1>Login</h1>
             <form className={styles.formContainer} onSubmit={handleSubmit}>
                 <input
+                    ref={usernameInputRef}
                     type="text"
                     placeholder="имя пользователя"
                     className={styles.input}

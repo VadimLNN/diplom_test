@@ -1,10 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import api from "../../../../shared/api/axios";
-import formStyles from "../../../auth/ui/Form.module.css"; // Переиспользуем стили
+import formStyles from "../../../auth/ui/Form.module.css";
 import toast from "react-hot-toast";
 
-const CreateDocumentForm = ({ projectId, onSuccess }) => {
+const CreateDocumentForm = ({ projectId, onSuccess, isOpen }) => {
     const [title, setTitle] = useState("");
+    const titleInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && titleInputRef.current) {
+            setTimeout(() => {
+                titleInputRef.current.focus();
+            }, 100);
+        }
+        if (!isOpen) {
+            setTitle("");
+        }
+    }, [isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,6 +33,7 @@ const CreateDocumentForm = ({ projectId, onSuccess }) => {
     return (
         <form onSubmit={handleSubmit} className={formStyles.formContainer}>
             <input
+                ref={titleInputRef}
                 className={formStyles.input}
                 type="text"
                 placeholder="Document Title"

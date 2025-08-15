@@ -1,11 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import api from "../../../../shared/api/axios";
-import formStyles from "./CreateProjectForm.module.css"; // Переиспользуем стили
+import formStyles from "./CreateProjectForm.module.css";
 import toast from "react-hot-toast";
 
-const CreateProjectForm = ({ onSuccess }) => {
+const CreateProjectForm = ({ onSuccess, isOpen }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
+    const nameInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && nameInputRef.current) {
+            setTimeout(() => {
+                nameInputRef.current.focus();
+            }, 100);
+        }
+    }, [isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,6 +31,7 @@ const CreateProjectForm = ({ onSuccess }) => {
     return (
         <form onSubmit={handleSubmit} className={formStyles.formContainer}>
             <input
+                ref={nameInputRef}
                 className={`${formStyles.formField} ${formStyles.inputPill}`}
                 type="text"
                 placeholder="Project Name"
