@@ -30,23 +30,17 @@ const ProjectDetailPage = () => {
             setIsLoading(true);
             setError("");
 
-            // Шаг 1: Загружаем основные данные проекта. Если этот запрос падает, дальше не идем.
             const projectRes = await api.get(`/projects/${projectId}`);
             setProject(projectRes.data);
 
-            // Шаг 2: Загружаем документы.
             const docsRes = await api.get(`/documents/project/${projectId}`);
             setDocuments(docsRes.data);
 
-            // Шаг 3: Загружаем роль.
-            // Если этот эндпоинт не работает, мы можем его "заглушить" или обработать ошибку.
             try {
                 const roleRes = await api.get(`/projects/${projectId}/permissions/my-role`);
                 setUserRole(roleRes.data.role);
             } catch (roleError) {
                 console.warn("Could not fetch user role, defaulting to 'viewer'.");
-                // Если не удалось получить роль, временно считаем пользователя наблюдателем,
-                // чтобы интерфейс не ломался.
                 setUserRole("viewer");
             }
         } catch (err) {
@@ -61,7 +55,6 @@ const ProjectDetailPage = () => {
         fetchData();
     }, [fetchData]);
 
-    // --- Обработка состояний загрузки и ошибок ---
     if (isLoading)
         return (
             <div className={pageStyles.pageContainer}>
@@ -137,7 +130,7 @@ const ProjectDetailPage = () => {
             </div>
 
             <Modal isOpen={isCreateDocModalOpen} onClose={() => setIsCreateDocModalOpen(false)} title="Create a New Document">
-                <CreateDocumentForm projectId={projectId} onSuccess={handleDocumentCreated} />
+                <CreateDocumentForm projectId={projectId} onSuccess={handleDocumentCreated} isOpen={isCreateDocModalOpen} />
             </Modal>
         </div>
     );

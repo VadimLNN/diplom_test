@@ -1,6 +1,6 @@
 // src/features/auth/ui/RegisterForm.jsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../shared/api/axios";
 import styles from "./Form.module.css";
@@ -11,6 +11,14 @@ const RegisterForm = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
+
+    const usernameInputRef = useRef(null);
+
+    useEffect(() => {
+        if (usernameInputRef.current) {
+            usernameInputRef.current.focus();
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,6 +38,7 @@ const RegisterForm = () => {
             <h1>Register</h1>
             <form onSubmit={handleSubmit} className={styles.formContainer}>
                 <input
+                    ref={usernameInputRef}
                     type="text"
                     placeholder="имя пользователя"
                     className={styles.input}
