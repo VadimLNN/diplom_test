@@ -1,0 +1,51 @@
+/* src/shared/ui/FlipCard/FlipCard.module.css */
+
+.card {
+    background-color: transparent;
+    width: 300px;
+    height: 200px;
+    perspective: 1000px; /* 3D-пространство для эффекта */
+    cursor: pointer;
+}
+
+.cardInner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+}
+
+/* При наведении поворачиваем внутренний блок */
+.card:hover .cardInner {
+    transform: rotateY(180deg);
+}
+
+/* Общий стиль для обеих сторон */
+.cardFace {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    /* САМОЕ ВАЖНОЕ СВОЙСТВО: скрывает обратную сторону элемента */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+
+    /* Стили "стекла" */
+    background: var(--glass-background);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--glass-border-color);
+    box-shadow: var(--glass-shadow);
+
+    /* Центрируем контент */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Задняя сторона изначально повернута */
+.cardBack {
+    transform: rotateY(180deg);
+}
