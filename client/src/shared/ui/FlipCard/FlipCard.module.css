@@ -4,7 +4,7 @@
     background-color: transparent;
     width: 300px;
     height: 200px;
-    perspective: 1000px; /* 3D-пространство для эффекта */
+    perspective: 1000px; /* Perspective все еще нужен для красивого 3D-поворота */
     cursor: pointer;
 }
 
@@ -16,19 +16,22 @@
     transform-style: preserve-3d;
 }
 
-/* При наведении поворачиваем внутренний блок */
 .card:hover .cardInner {
     transform: rotateY(180deg);
 }
 
-/* Общий стиль для обеих сторон */
+/* Общий контейнер для обеих сторон */
 .cardFace {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    /* САМОЕ ВАЖНОЕ СВОЙСТВО: скрывает обратную сторону элемента */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+
+    /* Плавный переход для прозрачности */
+    transition: opacity 0.5s ease-in-out;
+
+    /* Убираем backface-visibility, он больше не нужен */
 
     /* Стили "стекла" */
     background: var(--glass-background);
@@ -45,7 +48,31 @@
     box-sizing: border-box;
 }
 
-/* Задняя сторона изначально повернута */
+/* --- ГЛАВНАЯ МАГИЯ --- */
+
+/* Передняя сторона. Изначально видима. */
+.cardFront {
+    opacity: 1;
+    /* Ставим ее чуть выше, чтобы не было "мерцания" пикселей */
+    z-index: 2;
+    /* Важно! Поворачиваем вместе с родителем */
+    transform: rotateY(0deg);
+}
+
+/* Задняя сторона. Изначально НЕвидима. */
 .cardBack {
+    opacity: 0;
+    z-index: 1;
+    /* Она уже повернута, чтобы текст не был зеркальным */
     transform: rotateY(180deg);
+}
+
+/* При наведении на .card... */
+.card:hover .cardFront {
+    /* ...передняя сторона исчезает */
+    opacity: 0;
+}
+.card:hover .cardBack {
+    /* ...а задняя появляется */
+    opacity: 1;
 }
