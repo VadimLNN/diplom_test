@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { socket } from "../../../../shared/api/socket";
 import styles from "./CollaborativeEditor.module.css";
+import ReactMarkdown from "react-markdown";
 
 const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
     const [content, setContent] = useState("Loading content...");
@@ -122,21 +123,48 @@ const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
         }, 2000);
     };
 
+    const [mode, setMode] = useState("write");
+
     return (
         <div className={styles.editorWrapper}>
-            <div className={styles.status}>
-                Status:
-                <span className={isConnected ? styles.statusConnected : styles.statusDisconnected}>
-                    {isConnected ? " Connected" : " Disconnected"}
-                </span>
+            {/* Панель инструментов с переключателем и статусом */}
+            <div className={styles.toolbar}>
+                <div className={styles.modeSwitcher}>
+                    <button
+                        onClick={() => setMode("write")}
+                        className={`${styles.modeButton} ${mode === "write" ? styles.active : ""}`}
+                        disabled={isReadOnly}
+                    >
+                        Write
+                    </button>
+                    <button onClick={() => setMode("preview")} className={`${styles.modeButton} ${mode === "preview" ? styles.active : ""}`}>
+                        Preview
+                    </button>
+                </div>
+                <div className={styles.status}>
+                    Status:
+                    <span className={isConnected ? styles.statusConnected : styles.statusDisconnected}>
+                        {isConnected ? " Connected" : " Disconnected"}
+                    </span>
+                </div>
             </div>
-            <textarea
-                className={styles.textarea}
-                value={content}
-                onChange={handleChange}
-                readOnly={isReadOnly}
-                placeholder="Start writing your masterpiece..."
-            />
+
+            {/* Рабочая область с условным рендерингом */}
+            <div className={styles.contentArea}>
+                {mode === "write" ? (
+                    <textarea
+                        className={styles.textarea}
+                        value={content}
+                        onChange={handleChange}
+                        readOnly={isReadOnly}
+                        placeholder="Start writing your masterpiece... (Markdown is supported!)"
+                    />
+                ) : (
+                    <div className={styles.preview}>
+                        <ReactMarkdown>{content}</ReactMarkdown>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

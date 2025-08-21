@@ -1,39 +1,46 @@
 /* src/features/document/editor/ui/CollaborativeEditor.module.css */
 
-/* Контейнер-обертка, который будет занимать все доступное место */
 .editorWrapper {
     width: 100%;
-    height: 700px; /* Занимает всю высоту родителя (.editorContent) */
-
-    /* Стили стекла */
-    background: rgba(30, 30, 40, 0.5); /* Более темный и насыщенный фон */
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    height: 700px;
+    background: rgba(30, 30, 40, 0.5);
     border-radius: var(--border-radius);
     border: 1px solid var(--glass-border-color);
-
     padding: 20px;
     box-sizing: border-box;
-
-    /* Чтобы дочерние элементы правильно расположились */
     display: flex;
     flex-direction: column;
 }
 
-/* Стили для самой textarea */
-.textarea {
-    flex-grow: 1; /* <-- Занимает все оставшееся место внутри wrapper'а */
-    width: 100%;
+/* --- НОВЫЕ СТИЛИ ДЛЯ ПАНЕЛИ ИНСТРУМЕНТОВ --- */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
 
-    background: transparent; /* Полностью прозрачный фон */
+.modeSwitcher {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: var(--border-radius-pill);
+    display: flex;
+}
+
+.modeButton {
+    background: transparent;
     border: none;
-    outline: none;
-    resize: none;
+    color: var(--color-text-secondary);
+    padding: 8px 16px;
+    border-radius: var(--border-radius-pill);
+    cursor: pointer;
+    font-weight: 500;
+}
 
+.modeButton.active {
+    background: rgba(255, 255, 255, 0.1);
     color: var(--color-text-primary);
-    font-family: var(--font-family-base);
-    font-size: 18px; /* Сделаем текст чуть крупнее */
-    line-height: 1.7;
 }
 
 /* Стиль для текста статуса */
@@ -46,4 +53,62 @@
 }
 .statusDisconnected {
     color: #f87171; /* Красный */
+}
+
+.contentArea {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: auto; /* Добавляем скролл, если контент не помещается */
+    border-top: 1px solid var(--glass-border-color);
+    padding-top: 15px;
+}
+
+.textarea {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--color-text-primary);
+    font-family: var(--font-family-base);
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+/* --- НОВЫЕ СТИЛИ ДЛЯ ОБЛАСТИ ПРЕДПРОСМОТРА --- */
+.preview {
+    width: 100%;
+    height: 100%;
+    color: var(--color-text-primary);
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+/* Стилизуем базовые Markdown-теги, чтобы они выглядели красиво */
+.preview h1,
+.preview h2,
+.preview h3 {
+    border-bottom: 1px solid var(--glass-border-color);
+    padding-bottom: 10px;
+}
+.preview a {
+    color: #8ab4f8;
+    text-decoration: none;
+}
+.preview a:hover {
+    text-decoration: underline;
+}
+.preview code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Courier New", Courier, monospace;
+}
+.preview blockquote {
+    border-left: 3px solid var(--color-text-secondary);
+    padding-left: 15px;
+    margin-left: 0;
+    color: var(--color-text-secondary);
 }
