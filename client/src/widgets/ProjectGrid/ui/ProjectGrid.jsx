@@ -2,10 +2,17 @@
 import React from "react";
 import ProjectCard from "../../../entities/project/ui/ProjectCard";
 import styles from "./ProjectGrid.module.css";
+import EmptyState from "../../../shared/ui/EmptyState/EmptyState";
 
-const ProjectGrid = ({ projects }) => {
+const ProjectGrid = ({ projects, onCreateClick }) => {
     if (!projects || projects.length === 0) {
-        return <p>No projects found. Create your first one!</p>;
+        return (
+            <EmptyState icon="🗂️" title="No Projects Yet" message="It looks a bit empty here. Let's create your first project to get started!">
+                <button onClick={onCreateClick} className="btn-primary">
+                    + Create Your First Project
+                </button>
+            </EmptyState>
+        );
     }
 
     return (

@@ -115,12 +115,12 @@ const ProjectDetailPage = () => {
             <div className={styles.tabContent}>
                 {activeTab === "documents" && (
                     <div>
-                        {(userRole === "owner" || userRole === "editor") && (
-                            <button onClick={() => setIsCreateDocModalOpen(true)} className="btn-primary" style={{ marginBottom: "20px" }}>
-                                + New Document
-                            </button>
-                        )}
-                        <DocumentGrid documents={documents} userRole={userRole} onDeleteDocument={handleDeleteDocument} />
+                        <DocumentGrid
+                            documents={documents}
+                            userRole={userRole}
+                            onDeleteDocument={handleDeleteDocument}
+                            onCreateClick={() => setIsCreateDocModalOpen(true)}
+                        />
                     </div>
                 )}
 
