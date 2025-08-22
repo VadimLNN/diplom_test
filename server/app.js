@@ -11,7 +11,6 @@ const cors = require("cors");
 const { loginLimiter } = require("./middleware/rateLimiter");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
-const { setupWSConnection } = require("y-websocket/bin/utils");
 
 // 3. Создание экземпляров app и server
 const app = express();
@@ -84,13 +83,50 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 7. Логика для Y.JS
-io.on("connection", (socket) => {
-    setupWSConnection(socket);
+// "Учетная книга" комнат { roomName: Set<socket> }
+const rooms = new Map();
 
-    console.log(`[Y.js] New client connected. Setting up Y-Websocket connection...`);
+io.on("connection", (socket) => {
+    let currentRoom = null;
+
+    // Y-websocket клиент при подключении отправляет сообщение типа "subscribe"
+    socket.on("message", (message) => {
+        try {
+            const data = JSON.parse(message);
+            if (data.type === "subscribe") {
+                // Пользователь хочет присоединиться к комнате
+                const roomName = data.topics[0];
+                if (roomName) {
+                    currentRoom = roomName;
+                    if (!rooms.has(roomName)) {
+                        rooms.set(roomName, new Set());
+                    }
+                    rooms.get(roomName).add(socket);
+                    console.log(`[Y.js] Socket ${socket.id} subscribed to room ${roomName}`);
+                }
+            } else if (data.type === "unsubscribe" && currentRoom) {
+                // Пользователь хочет покинуть комнату
+                rooms.get(currentRoom)?.delete(socket);
+            }
+        } catch (e) {
+            // Если это не JSON, значит, это бинарное обновление
+            // Просто пересылаем его всем в той же комнате, кроме отправителя
+            if (currentRoom && rooms.has(currentRoom)) {
+                for (const client of rooms.get(currentRoom)) {
+                    if (client !== socket) {
+                        client.send(message);
+                    }
+                }
+            }
+        }
+    });
 
     socket.on("disconnect", () => {
-        console.log(`[Y.js] Client disconnected.`);
+        // Удаляем сокет из комнаты, в которой он был
+        if (currentRoom && rooms.has(currentRoom)) {
+            rooms.get(currentRoom).delete(socket);
+            console.log(`[Y.js] Socket ${socket.id} disconnected from room ${currentRoom}`);
+        }
     });
 });
 
