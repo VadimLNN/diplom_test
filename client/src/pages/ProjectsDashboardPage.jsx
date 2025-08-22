@@ -41,15 +41,12 @@ const ProjectsDashboardPage = () => {
         <div className={styles.pageContainer}>
             <div className={styles.pageHeader}>
                 <h1>My Projects</h1>
-                <button onClick={handleOpenCreateModal} className="btn-primary" style={{ margin: "0 auto 1rem" }}>
-                    + New Project
-                </button>
             </div>
 
             {isLoading && <p>Loading projects...</p>}
             {error && <p style={{ color: "red" }}>{error}</p>}
 
-            {!isLoading && !error && <ProjectGrid projects={projects} />}
+            {!isLoading && !error && <ProjectGrid projects={projects} onCreateClick={() => setIsModalOpen(true)} />}
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create a New Project">
                 <CreateProjectForm onSuccess={handleProjectCreated} isOpen={isModalOpen} />
             </Modal>
