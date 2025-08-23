@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../shared/api/axios";
-import CollaborativeEditor from "./../features/document/editor/ui/CollaborativeEditor";
+import CollaborativeEditor from "../features/document/editor/ui/CollaborativeEditor";
 import pageStyles from "./PageStyles.module.css";
 import styles from "./DocumentEditorPage.module.css"; // Создадим этот файл
 

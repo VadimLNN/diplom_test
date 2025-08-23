@@ -1,9 +1,9 @@
 /* src/shared/ui/Loader/Loader.module.css */
 
 .loaderContainer {
-    position: relative;
-    width: 200px; /* Задаем размеры контейнеру */
-    height: 100px;
+    position: center;
+    width: 60%; /* Задаем размеры контейнеру */
+    height: 50%;
     overflow: hidden;
 }
 

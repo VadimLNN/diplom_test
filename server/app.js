@@ -87,46 +87,31 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const rooms = new Map();
 
 io.on("connection", (socket) => {
-    let currentRoom = null;
+    console.log(`[y-socket.io] Client connected: ${socket.id}`);
 
-    // Y-websocket клиент при подключении отправляет сообщение типа "subscribe"
-    socket.on("message", (message) => {
-        try {
-            const data = JSON.parse(message);
-            if (data.type === "subscribe") {
-                // Пользователь хочет присоединиться к комнате
-                const roomName = data.topics[0];
-                if (roomName) {
-                    currentRoom = roomName;
-                    if (!rooms.has(roomName)) {
-                        rooms.set(roomName, new Set());
-                    }
-                    rooms.get(roomName).add(socket);
-                    console.log(`[Y.js] Socket ${socket.id} subscribed to room ${roomName}`);
-                }
-            } else if (data.type === "unsubscribe" && currentRoom) {
-                // Пользователь хочет покинуть комнату
-                rooms.get(currentRoom)?.delete(socket);
-            }
-        } catch (e) {
-            // Если это не JSON, значит, это бинарное обновление
-            // Просто пересылаем его всем в той же комнате, кроме отправителя
-            if (currentRoom && rooms.has(currentRoom)) {
-                for (const client of rooms.get(currentRoom)) {
-                    if (client !== socket) {
-                        client.send(message);
-                    }
-                }
-            }
-        }
+    // Слушаем специальное событие для получения обновлений от клиента
+    socket.on("yjs-update", (update, docName) => {
+        // Просто пересылаем обновление всем остальным в той же комнате
+        socket.to(docName).emit("yjs-update", update, docName);
+
+        // Сохраняем обновление в базу
+        const doc = persistence.getYDoc(docName);
+        Y.applyUpdate(doc, update);
+    });
+
+    // Слушаем событие, когда клиент хочет присоединиться к комнате
+    socket.on("yjs-subscribe", (docName) => {
+        socket.join(docName);
+
+        // Отправляем текущее состояние документа новому клиенту
+        persistence.getYDoc(docName).then((doc) => {
+            const state = Y.encodeStateAsUpdate(doc);
+            socket.emit("yjs-update", state, docName);
+        });
     });
 
     socket.on("disconnect", () => {
-        // Удаляем сокет из комнаты, в которой он был
-        if (currentRoom && rooms.has(currentRoom)) {
-            rooms.get(currentRoom).delete(socket);
-            console.log(`[Y.js] Socket ${socket.id} disconnected from room ${currentRoom}`);
-        }
+        console.log(`[y-socket.io] Client disconnected: ${socket.id}`);
     });
 });
 

@@ -1,7 +1,7 @@
 // src/pages/ProjectsDashboardPage.jsx
 import React, { useState, useEffect } from "react";
-import api from "./../shared/api/axios";
-import ProjectGrid from "./../widgets/ProjectGrid/ui/ProjectGrid";
+import api from "../shared/api/axios";
+import ProjectGrid from "../widgets/ProjectGrid/ui/ProjectGrid";
 import styles from "./PageStyles.module.css";
 import CreateProjectForm from "../features/projects/create/ui/CreateProjectForm";
 import Modal from "../shared/ui/Modal/Modal";
