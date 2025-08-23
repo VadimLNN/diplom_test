@@ -3,14 +3,17 @@
 // 1. Конфигурация dotenv
 require("dotenv").config();
 
-// 2. Импорт зависимостей
+// 2. Импорт всех зависимостей
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
+const { Server } = require("socket.io"); // Socket.IO
 const cors = require("cors");
-const { loginLimiter } = require("./middleware/rateLimiter");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+const { loginLimiter } = require("./middleware/rateLimiter");
+const { getUserRoleInProject } = require("./middleware/checkRole");
+const pool = require("./db");
+const jwt = require("jsonwebtoken");
 
 // 3. Создание экземпляров app и server
 const app = express();
@@ -82,38 +85,34 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 //      3. Создаем новый роут для нашей документации
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// 7. Логика для Y.JS
-// "Учетная книга" комнат { roomName: Set<socket> }
-const rooms = new Map();
-
-io.on("connection", (socket) => {
-    console.log(`[y-socket.io] Client connected: ${socket.id}`);
-
-    // Слушаем специальное событие для получения обновлений от клиента
-    socket.on("yjs-update", (update, docName) => {
-        // Просто пересылаем обновление всем остальным в той же комнате
-        socket.to(docName).emit("yjs-update", update, docName);
-
-        // Сохраняем обновление в базу
-        const doc = persistence.getYDoc(docName);
-        Y.applyUpdate(doc, update);
-    });
-
-    // Слушаем событие, когда клиент хочет присоединиться к комнате
-    socket.on("yjs-subscribe", (docName) => {
-        socket.join(docName);
-
-        // Отправляем текущее состояние документа новому клиенту
-        persistence.getYDoc(docName).then((doc) => {
-            const state = Y.encodeStateAsUpdate(doc);
-            socket.emit("yjs-update", state, docName);
-        });
-    });
-
-    socket.on("disconnect", () => {
-        console.log(`[y-socket.io] Client disconnected: ${socket.id}`);
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) return next(new Error("Auth error"));
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return next(new Error("Auth error"));
+        socket.user = { id: decoded.id, username: decoded.username };
+        next();
     });
 });
 
-// 8. Экспортируем 'app' для тестов и 'server' для запуска
+io.on("connection", (socket) => {
+    console.log(`✅ User connected: ${socket.user.username}`);
+
+    socket.on("join_document", (documentId) => {
+        // Здесь можно добавить проверку прав, но для простоты пока оставим так
+        socket.join(documentId);
+        console.log(`[Socket] User ${socket.user.username} joined room ${documentId}`);
+    });
+
+    socket.on("document_change", (documentId, newContent) => {
+        // Просто пересылаем контент всем остальным в комнате
+        socket.to(documentId).emit("receive_document_change", newContent);
+    });
+
+    socket.on("disconnect", () => {
+        console.log(`❌ User disconnected: ${socket.user.username}`);
+    });
+});
+
+// 9. Экспорт
 module.exports = { app, server };
