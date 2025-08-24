@@ -1,9 +1,9 @@
 // src/pages/DocumentEditorPage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../shared/api/axios";
-import CollaborativeEditor from "./../features/document/editor/ui/CollaborativeEditor";
+import CollaborativeEditor from "../features/document/editor/ui/CollaborativeEditor";
 import pageStyles from "./PageStyles.module.css";
 import styles from "./DocumentEditorPage.module.css"; // Создадим этот файл
 
@@ -13,6 +13,8 @@ const DocumentEditorPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [userRole, setUserRole] = useState(null);
+
+    const saveTimeoutRef = useRef(null);
 
     const fetchDocumentData = useCallback(async () => {
         try {
@@ -35,19 +37,19 @@ const DocumentEditorPage = () => {
     }, [fetchDocumentData]);
 
     const handleSave = useCallback(async (docId, updatedContent) => {
-        try {
-            // Оптимистичное обновление: сначала обновляем стейт для отзывчивости
-            setDocument((prevDoc) => ({ ...prevDoc, content: updatedContent }));
-
-            // Затем отправляем запрос на сервер
-            await api.put(`/documents/${docId}`, { content: updatedContent });
-            console.log("Document saved successfully!");
-            // Можно добавить уведомление (toast) об успешном сохранении
-        } catch (error) {
-            console.error("Failed to save document:", error);
-            // Можно вернуть стейт обратно или показать ошибку
-            setError("Failed to save changes.");
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
         }
+
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                await api.put(`/documents/${docId}`, { content: updatedContent });
+                console.log("Autosaved successfully!");
+                // Можно показать toast.success('Saved!')
+            } catch (error) {
+                console.error("Failed to autosave document:", error);
+            }
+        }, 2000); // Задержка 2 секунды
     }, []);
 
     if (isLoading)
@@ -62,6 +64,12 @@ const DocumentEditorPage = () => {
                 <p style={{ color: "red" }}>{error}</p>
             </div>
         );
+    if (!document)
+        return (
+            <div className={pageStyles.pageContainer}>
+                <p>Document not found</p>
+            </div>
+        );
 
     return (
         <div className={`${pageStyles.pageContainer} ${styles.editorLayout}`}>
@@ -71,9 +79,14 @@ const DocumentEditorPage = () => {
                     <span>{document.title}</span>
                 </div>
             </header>
-            <div className={styles.editorContent}>
-                <CollaborativeEditor documentId={document.id} onSave={handleSave} isReadOnly={userRole === "viewer"} />
-            </div>
+
+            <main className={styles.editorContent}>
+                <CollaborativeEditor
+                    documentId={document.id}
+                    onSave={handleSave} // <-- 5. ПЕРЕДАЕМ ФУНКЦИЮ В РЕДАКТОР
+                    isReadOnly={userRole === "viewer"}
+                />
+            </main>
         </div>
     );
 };

@@ -1,11 +1,11 @@
 // src/pages/ProjectDetailPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import api from "./../shared/api/axios";
-import ProjectMembers from "./../features/projects/manage-members/ui/ProjectMembers";
-import ProjectSettings from "./../features/projects/settings/ui/ProjectSettings";
-import DocumentGrid from "./../widgets/DocumentGrid/ui/DocumentGrid";
-import Modal from "./../shared/ui/Modal/Modal";
+import api from "../shared/api/axios";
+import ProjectMembers from "../features/projects/manage-members/ui/ProjectMembers";
+import ProjectSettings from "../features/projects/settings/ui/ProjectSettings";
+import DocumentGrid from "../widgets/DocumentGrid/ui/DocumentGrid";
+import Modal from "../shared/ui/Modal/Modal";
 import CreateDocumentForm from "../features/document/create/ui/CreateDocumentForm";
 
 // Импортируем стили

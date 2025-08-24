@@ -1,133 +1,69 @@
 import React, { useState, useEffect, useRef } from "react";
-import { socket } from "../../../../shared/api/socket";
+import Loader from "../../../../shared/ui/Loader/Loader";
 import styles from "./CollaborativeEditor.module.css";
+import { socket } from "../../../../shared/api/socket";
 import ReactMarkdown from "react-markdown";
 
 const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
-    const [content, setContent] = useState("Loading content...");
+    const [content, setContent] = useState("");
     const [isConnected, setIsConnected] = useState(socket.connected);
-    const saveTimeoutRef = useRef(null);
+    const [mode, setMode] = useState("write");
 
+    // Эффект для загрузки начального контента
     useEffect(() => {
-        console.log(`[EDITOR] useEffect with fetch triggered for documentId: ${documentId}`);
-        let isMounted = true;
-
-        // --- ИСПОЛЬЗУЕМ FETCH ВМЕСТО AXIOS ---
-        const fetchDocumentWithFetch = async () => {
+        const fetchContent = async () => {
+            // (Предполагается, что `api` импортирован)
             try {
-                // 1. Получаем токен вручную, как это делает ваш interceptor
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    throw new Error("No token found");
-                }
-
-                // 2. Формируем заголовки
-                const headers = {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                };
-
-                // 3. Делаем запрос
                 const response = await fetch(`http://localhost:5000/api/documents/${documentId}`, {
-                    method: "GET",
-                    headers: headers,
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                 });
-
-                // 4. Проверяем, что ответ успешный (статус 200-299)
-                if (!response.ok) {
-                    // Если нет, создаем ошибку с текстом статуса
-                    throw new Error(`Network response was not ok: ${response.statusText}`);
-                }
-
-                // 5. Парсим JSON из ответа
                 const data = await response.json();
-
-                // 6. Если все хорошо, выводим в лог и обновляем состояние
-                console.log("[EDITOR] SUCCESS with fetch: Received data:", data);
-                if (isMounted) {
-                    setContent(data.content || "");
-                }
+                setContent(data.content || "");
             } catch (error) {
-                // 7. Ловим любые ошибки (сеть, парсинг, статус)
-                console.error("[EDITOR] CATCH with fetch: Failed to fetch document.", error);
-                if (isMounted) {
-                    setContent("Error: Could not load document.");
-                }
+                setContent("Failed to load content.");
             }
         };
-
-        fetchDocumentWithFetch();
-
-        return () => {
-            isMounted = false;
-        };
+        fetchContent();
     }, [documentId]);
 
+    // Эффект для real-time
     useEffect(() => {
-        // Функция для установки слушателей
-        const setupSocketListeners = () => {
-            socket.on("connect", () => {
-                console.log("✅ Socket connected!");
-                setIsConnected(true);
-                // После подключения сразу же вступаем в комнату
-                socket.emit("join_document", documentId);
-            });
+        if (!socket.connected) socket.connect();
+        socket.emit("join_document", documentId);
 
-            socket.on("disconnect", () => {
-                console.log("❌ Socket disconnected!");
-                setIsConnected(false);
-            });
-
-            socket.on("receive_document_change", (receivedContent) => {
-                console.log("🔄 Received change from another user:", receivedContent);
-                setContent(receivedContent);
-            });
+        const handleReceiveChange = (newContent) => {
+            setContent(newContent);
         };
+        socket.on("receive_document_change", handleReceiveChange);
 
-        // Функция для удаления слушателей
-        const cleanupSocketListeners = () => {
-            socket.off("connect");
-            socket.off("disconnect");
-            socket.off("receive_document_change");
-        };
+        const handleConnect = () => setIsConnected(true);
+        const handleDisconnect = () => setIsConnected(false);
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
 
-        // Если сокет еще не подключен, подключаем
-        if (!socket.connected) {
-            socket.connect();
-        } else {
-            // Если уже подключен (например, после hot-reload), просто вступаем в комнату
-            socket.emit("join_document", documentId);
-        }
-
-        setupSocketListeners();
-
-        // Функция очистки при размонтировании компонента
         return () => {
-            console.log("Cleaning up socket listeners and disconnecting...");
-            cleanupSocketListeners();
+            socket.off("receive_document_change", handleReceiveChange);
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
             socket.disconnect();
         };
     }, [documentId]);
 
+    // Обработчик изменений
     const handleChange = (e) => {
         const newContent = e.target.value;
         setContent(newContent);
-        socket.emit("document_change", { documentId, newContent });
-
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        saveTimeoutRef.current = setTimeout(() => {
-            // ИСПРАВЛЕНИЕ: Передаем `documentId` из props, а не `newContent`
+        // Отправляем изменения на сервер
+        socket.emit("document_change", documentId, newContent);
+        // Вызываем автосохранение
+        if (onSave) {
             onSave(documentId, newContent);
-        }, 2000);
+        }
     };
-
-    const [mode, setMode] = useState("write");
 
     return (
         <div className={styles.editorWrapper}>
-            {/* Панель инструментов с переключателем и статусом */}
+            {/* --- 3. ВОЗВРАЩАЕМ ПАНЕЛЬ ИНСТРУМЕНТОВ --- */}
             <div className={styles.toolbar}>
                 <div className={styles.modeSwitcher}>
                     <button
@@ -149,7 +85,7 @@ const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
                 </div>
             </div>
 
-            {/* Рабочая область с условным рендерингом */}
+            {/* --- 4. ВОЗВРАЩАЕМ УСЛОВНЫЙ РЕНДЕРИНГ --- */}
             <div className={styles.contentArea}>
                 {mode === "write" ? (
                     <textarea
@@ -157,9 +93,10 @@ const CollaborativeEditor = ({ documentId, onSave, isReadOnly = false }) => {
                         value={content}
                         onChange={handleChange}
                         readOnly={isReadOnly}
-                        placeholder="Start writing your masterpiece... (Markdown is supported!)"
+                        placeholder="Start writing... (Markdown is supported!)"
                     />
                 ) : (
+                    // Компонент ReactMarkdown будет рендерить HTML из вашего текста
                     <div className={styles.preview}>
                         <ReactMarkdown>{content}</ReactMarkdown>
                     </div>
