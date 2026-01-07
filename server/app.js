@@ -32,7 +32,7 @@ app.use(
 app.use("/api/auth/login", loginLimiter);
 
 // 6. Подключение роутов
-app.use(tabsRoutes);
+app.use("/api", tabsRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/projects", require("./routes/projects"));
 app.use("/api/documents", require("./routes/documents"));

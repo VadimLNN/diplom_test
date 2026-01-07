@@ -7,6 +7,7 @@ import ProjectSettings from "../features/projects/settings/ui/ProjectSettings";
 import DocumentGrid from "../widgets/DocumentGrid/ui/DocumentGrid";
 import Modal from "../shared/ui/Modal/Modal";
 import CreateDocumentForm from "../features/document/create/ui/CreateDocumentForm";
+import CollaborativeEditor from "../features/tabs/editor/ui/CollaborativeEditor";
 
 // Импортируем стили
 import pageStyles from "./PageStyles.module.css";
@@ -25,6 +26,32 @@ const ProjectDetailPage = () => {
 
     const [isCreateDocModalOpen, setIsCreateDocModalOpen] = useState(false);
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Tabs (новая логика)
+    const [tabs, setTabs] = useState([]);
+    const [activeTabId, setActiveTabId] = useState(null);
+    const [isCreatingTab, setIsCreatingTab] = useState(false);
+
+    const handleCreateTab = async () => {
+        try {
+            setIsCreatingTab(true);
+
+            const res = await api.post(`/projects/${projectId}/tabs`, {
+                type: "text",
+                title: `Tab ${tabs.length + 1}`,
+            });
+
+            setTabs((prev) => [...prev, res.data]);
+            setActiveTabId(res.data.id);
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to create tab");
+        } finally {
+            setIsCreatingTab(false);
+        }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -35,6 +62,13 @@ const ProjectDetailPage = () => {
 
             const docsRes = await api.get(`/documents/project/${projectId}`);
             setDocuments(docsRes.data);
+
+            const tabsRes = await api.get(`/projects/${projectId}/tabs`);
+            setTabs(tabsRes.data);
+
+            if (tabsRes.data.length > 0) {
+                setActiveTabId(tabsRes.data[0].id);
+            }
 
             try {
                 const roleRes = await api.get(`/projects/${projectId}/permissions/my-role`);
@@ -102,6 +136,9 @@ const ProjectDetailPage = () => {
                 <button className={`${styles.tabButton} ${activeTab === "members" ? styles.active : ""}`} onClick={() => setActiveTab("members")}>
                     Members
                 </button>
+                <button className={`${styles.tabButton} ${activeTab === "tabs" ? styles.active : ""}`} onClick={() => setActiveTab("tabs")}>
+                    Tabs
+                </button>
                 {userRole === "owner" && (
                     <button
                         className={`${styles.tabButton} ${activeTab === "settings" ? styles.active : ""}`}
@@ -127,6 +164,39 @@ const ProjectDetailPage = () => {
                 {activeTab === "members" && <ProjectMembers projectId={projectId} userRole={userRole} />}
 
                 {activeTab === "settings" && userRole === "owner" && <ProjectSettings project={project} />}
+
+                {activeTab === "tabs" && (
+                    <div>
+                        <div style={{ marginBottom: 12 }}>
+                            <button onClick={handleCreateTab} disabled={isCreatingTab}>
+                                + Create tab
+                            </button>
+                        </div>
+
+                        {tabs.length === 0 && <p>No tabs yet</p>}
+
+                        <ul>
+                            {tabs.map((tab) => (
+                                <li key={tab.id}>
+                                    <button
+                                        onClick={() => setActiveTabId(tab.id)}
+                                        style={{
+                                            fontWeight: tab.id === activeTabId ? "bold" : "normal",
+                                        }}
+                                    >
+                                        {tab.title} ({tab.type})
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {activeTabId && (
+                            <div style={{ marginTop: 16 }}>
+                                <CollaborativeEditor tabId={activeTabId} />
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <Modal isOpen={isCreateDocModalOpen} onClose={() => setIsCreateDocModalOpen(false)} title="Create a New Document">

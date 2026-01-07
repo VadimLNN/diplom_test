@@ -3,24 +3,34 @@ const jwt = require("jsonwebtoken");
 const db = require("../db");
 
 const HOCO_PORT = process.env.HOCO_PORT || 1234;
+const JWT_SECRET = process.env.JWT_SECRET;
 
+/* ======================================================
+   Utils
+====================================================== */
 function verifyToken(token) {
     try {
-        return jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
+        return jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+        console.error("[JWT] verify failed:", err.message);
         return null;
     }
 }
 
-const hocuspocus = new Server({
+/* ======================================================
+   Hocuspocus Server
+====================================================== */
+const server = new Server({
     port: HOCO_PORT,
 
     /* ===============================
-       AUTH
+       AUTH — ВЫЗЫВАЕТСЯ ПЕРЕД CONNECT
     =============================== */
     async onAuthenticate({ token }) {
+        console.log("[onAuthenticate] token =", token);
+
         if (!token) {
-            throw new Error("No token provided");
+            throw new Error("No token");
         }
 
         const payload = verifyToken(token);
@@ -28,35 +38,43 @@ const hocuspocus = new Server({
             throw new Error("Invalid token");
         }
 
+        // Просто подтверждаем, КТО это
         return {
             userId: payload.id,
+            username: payload.username,
         };
     },
 
     /* ===============================
-       PERMISSIONS
+       CONNECT — ПОСЛЕ AUTH
     =============================== */
-    async onConnect({ context, documentName }) {
-        const tabId = documentName; // tabId == documentName
-        const userId = context.userId;
+    async onConnect({ documentName }) {
+        console.log("🟢 CONNECT document =", documentName);
+        const userId = context.user?.userId;
 
-        const result = await db.query(
+        if (!userId) {
+            throw new Error("Unauthenticated");
+        }
+
+        const res = await db.query(
             `
-            SELECT pm.role
+            SELECT pp.role
             FROM tabs t
-            JOIN project_members pm ON pm.project_id = t.project_id
-            WHERE t.id = $1 AND pm.user_id = $2
-            `,
-            [tabId, userId]
+            JOIN project_permissions pp
+            ON pp.project_id = t.project_id
+            WHERE t.id = $1
+            AND pp.user_id = $2
+        `,
+            [documentName, userId]
         );
 
-        if (result.rowCount === 0) {
+        if (res.rowCount === 0) {
             throw new Error("Access denied");
         }
 
-        context.role = result.rows[0].role;
+        context.role = res.rows[0].role;
 
-        console.log(`🟢 YJS CONNECT user=${userId} tab=${tabId} role=${context.role}`);
+        console.log(`🟢 ACCESS GRANTED user=${userId} tab=${documentName} role=${context.role}`);
     },
 
     /* ===============================
@@ -64,9 +82,21 @@ const hocuspocus = new Server({
     =============================== */
     onChange({ context }) {
         if (context.role === "viewer") {
-            throw new Error("Read-only access");
+            throw new Error("Read-only");
+        }
+    },
+
+    /* ===============================
+       OPTIONAL DEBUG
+    =============================== */
+    onDisconnect({ context }) {
+        if (context?.user) {
+            console.log(`🔴 DISCONNECT user=${context.user.id}`);
         }
     },
 });
 
-hocuspocus.listen();
+/* ======================================================
+   START
+====================================================== */
+server.listen();
