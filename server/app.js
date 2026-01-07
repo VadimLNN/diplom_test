@@ -19,14 +19,6 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const server = http.createServer(app);
 
-// 4. Конфигурация Socket.IO
-const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"],
-    },
-});
-
 // 5. Middleware для Express
 app.use(express.json());
 app.use(
@@ -84,35 +76,6 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 //      3. Создаем новый роут для нашей документации
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("Auth error"));
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) return next(new Error("Auth error"));
-        socket.user = { id: decoded.id, username: decoded.username };
-        next();
-    });
-});
-
-io.on("connection", (socket) => {
-    console.log(`✅ User connected: ${socket.user.username}`);
-
-    socket.on("join_document", (documentId) => {
-        // Здесь можно добавить проверку прав, но для простоты пока оставим так
-        socket.join(documentId);
-        console.log(`[Socket] User ${socket.user.username} joined room ${documentId}`);
-    });
-
-    socket.on("document_change", (documentId, newContent) => {
-        // Просто пересылаем контент всем остальным в комнате
-        socket.to(documentId).emit("receive_document_change", newContent);
-    });
-
-    socket.on("disconnect", () => {
-        console.log(`❌ User disconnected: ${socket.user.username}`);
-    });
-});
 
 // 9. Экспорт
 module.exports = { app, server };
