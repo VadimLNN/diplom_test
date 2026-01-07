@@ -14,6 +14,7 @@ const { loginLimiter } = require("./middleware/rateLimiter");
 const { getUserRoleInProject } = require("./middleware/checkRole");
 const pool = require("./db");
 const jwt = require("jsonwebtoken");
+const tabsRoutes = require("./routes/tabs");
 
 // 3. Создание экземпляров app и server
 const app = express();
@@ -31,6 +32,7 @@ app.use(
 app.use("/api/auth/login", loginLimiter);
 
 // 6. Подключение роутов
+app.use(tabsRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/projects", require("./routes/projects"));
 app.use("/api/documents", require("./routes/documents"));
@@ -79,3 +81,4 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 9. Экспорт
 module.exports = { app, server };
+require("./realtime/hocuspocus");
