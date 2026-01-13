@@ -6,7 +6,6 @@ require("dotenv").config();
 // 2. Импорт всех зависимостей
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io"); // Socket.IO
 const cors = require("cors");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
@@ -20,6 +19,9 @@ const tabsRoutes = require("./routes/tabs");
 const app = express();
 const server = http.createServer(app);
 
+const expressWs = require("express-ws");
+expressWs(app, server);
+
 // 5. Middleware для Express
 app.use(express.json());
 app.use(
@@ -29,13 +31,18 @@ app.use(
         exposedHeaders: ["Authorization"],
     })
 );
+
+const hocuspocusServer = require("./realtime/hocuspocus_server");
+app.ws("/api/collab", (ws, req) => {
+    hocuspocusServer.handleConnection(ws, req);
+});
+
 app.use("/api/auth/login", loginLimiter);
 
 // 6. Подключение роутов
-app.use("/api", tabsRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/projects", require("./routes/projects"));
-app.use("/api/documents", require("./routes/documents"));
+app.use("/api", tabsRoutes);
 app.use("/api/projects/:projectId/permissions", require("./routes/permissions"));
 
 // 7. НАСТРОЙКА SWAGGER
@@ -81,4 +88,3 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 9. Экспорт
 module.exports = { app, server };
-require("./realtime/hocuspocus");

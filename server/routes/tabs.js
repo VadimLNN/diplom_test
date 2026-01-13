@@ -1,63 +1,27 @@
+// server/routes/tabs.js
 const express = require("express");
+const { body, validationResult } = require("express-validator");
 const router = express.Router();
 
-const auth = require("../middleware/authMiddleware");
-const projectAccess = require("../middleware/checkProjectAccess");
-const tabsService = require("../services/tabsService");
+const authMiddleware = require("../middleware/authMiddleware");
+const tabService = require("../services/tabService"); // ✅ TabService!
 
-// ===============================
-// Create tab
-// POST /projects/:projectId/tabs
-// ===============================
-router.post("/projects/:projectId/tabs", auth, projectAccess, async (req, res) => {
+router.use(authMiddleware);
+
+// ✅ DELETE — используем сервис
+router.delete("/:tabId", authMiddleware, async (req, res) => {
     try {
-        const { projectId } = req.params;
-        const { type, title } = req.body;
-
-        if (!type || !title) {
-            return res.status(400).json({ error: "type and title are required" });
+        await tabService.deleteTab(req.user.id, req.params.tabId);
+        res.json({ message: "Tab deleted successfully" });
+    } catch (error) {
+        if (error.statusCode === 403) {
+            return res.status(403).json({ error: error.message });
         }
-
-        const tab = await tabsService.createTab({
-            projectId,
-            type,
-            title,
-        });
-
-        res.json(tab);
-    } catch (err) {
-        console.error("Create tab error:", err);
-        res.status(500).json({ error: "Failed to create tab" });
-    }
-});
-
-// ===============================
-// Get tabs by project
-// GET /projects/:projectId/tabs
-// ===============================
-router.get("/projects/:projectId/tabs", auth, projectAccess, async (req, res) => {
-    try {
-        const { projectId } = req.params;
-        const tabs = await tabsService.getTabsByProject(projectId);
-        res.json(tabs);
-    } catch (err) {
-        console.error("Get tabs error:", err);
-        res.status(500).json({ error: "Failed to load tabs" });
-    }
-});
-
-// ===============================
-// Delete tab
-// DELETE /tabs/:tabId
-// ===============================
-router.delete("/tabs/:tabId", auth, async (req, res) => {
-    try {
-        const { tabId } = req.params;
-        await tabsService.deleteTab(tabId);
-        res.json({ ok: true });
-    } catch (err) {
-        console.error("Delete tab error:", err);
-        res.status(500).json({ error: "Failed to delete tab" });
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ error: error.message });
+        }
+        console.error(error);
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -3,139 +3,109 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
-
-import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
-
+import * as Y from "yjs";
 import Loader from "../../../../shared/ui/Loader/Loader";
 import styles from "./CollaborativeEditor.module.css";
 
-const WS_URL = "ws://localhost:1234";
+export default function CollaborativeEditor({ projectId, userId, userName }) {
+    const [connected, setConnected] = useState(false);
+    const [editor, setEditor] = useState(null);
 
-const CollaborativeEditor = ({
-    tabId, // ❗ ТОЛЬКО UUID из таблицы tabs.id
-    isReadOnly = false,
-}) => {
-    /* ======================================================
-       Guards
-    ====================================================== */
-    if (!tabId) {
-        console.error("[CollaborativeEditor] tabId is missing");
-        return <div>Invalid tab</div>;
-    }
+    // Создаем Y.Doc один раз для проекта
+    const doc = useMemo(() => new Y.Doc(), [projectId]);
 
-    /* ======================================================
-       Local state
-    ====================================================== */
-    const [providerReady, setProviderReady] = useState(false);
-
-    /* ======================================================
-       Yjs document (1 per tab)
-    ====================================================== */
-    const ydoc = useMemo(() => {
-        console.log("[CollaborativeEditor] create Y.Doc for tab", tabId);
-        return new Y.Doc();
-    }, [tabId]);
-    /* ======================================================
-       Hocuspocus provider
-    ====================================================== */
+    // Создаем HocuspocusProvider
     const provider = useMemo(() => {
-        const token = localStorage.getItem("token");
-        console.log("[CE] localStorage token =", token);
-
-        if (!token) {
-            console.warn("[CollaborativeEditor] no auth token");
-            return null;
-        }
-        console.log("[CollaborativeEditor] connect tab:", tabId);
+        const jwt = localStorage.getItem("jwt");
 
         return new HocuspocusProvider({
-            url: WS_URL,
-            name: tabId,
-            document: ydoc,
-            token: localStorage.getItem("token"),
+            url: `${process.env.REACT_APP_WS_URL || "ws://localhost:5000"}/api/collab`,
+            name: `project.${projectId}`, // уникально!
+            token: jwt,
+            document: doc,
+            connect: true,
+            resyncInterval: 5000, // переподключаться каждые 5s если нужно
+            awareness: {
+                // Информация для курсоров
+                user: {
+                    name: userName,
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                },
+            },
         });
-    }, [tabId, ydoc]);
+    }, [projectId, doc]);
 
-    /* ======================================================
-       Provider lifecycle
-    ====================================================== */
+    // Editor с Tiptap + Yjs
+    const customEditor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                history: false, // отключаем, Yjs управляет историей
+            }),
+            Collaboration.configure({
+                document: doc,
+                field: "prose", // поле в Y.XmlFragment
+            }),
+            CollaborationCursor.configure({
+                provider: provider.awareness,
+                user: {
+                    name: userName,
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                },
+            }),
+        ],
+        content: `<h2>Коллаборативный редактор 👋</h2><p>Начни писать...</p>`,
+    });
+
+    setEditor(customEditor);
+
+    // Отслеживаем статус подключения
     useEffect(() => {
-        if (!provider) return;
-
-        const handleStatus = ({ status }) => {
-            if (status === "connected") {
-                setProviderReady(true);
-            }
+        const handleSync = (isSynced) => {
+            setConnected(isSynced);
         };
 
-        provider.on("status", handleStatus);
+        provider.on("sync", handleSync);
 
         return () => {
-            provider.off("status", handleStatus);
+            provider.off("sync", handleSync);
         };
     }, [provider]);
 
-    /* ======================================================
-       TipTap extensions (SAFE)
-    ====================================================== */
-    const extensions = useMemo(() => {
-        const base = [
-            StarterKit.configure({
-                history: false, // history управляется Yjs
-            }),
-            Collaboration.configure({
-                document: ydoc,
-            }),
-        ];
-
-        if (providerReady) {
-            base.push(
-                CollaborationCursor.configure({
-                    provider,
-                    user: {
-                        name: "User",
-                        color: "#4F46E5",
-                    },
-                })
-            );
-        }
-
-        return base;
-    }, [ydoc, provider, providerReady]);
-
-    /* ======================================================
-       TipTap editor
-    ====================================================== */
-    const editor = useEditor({
-        editable: !isReadOnly,
-        extensions,
-    });
-
-    /* ======================================================
-       Cleanup
-    ====================================================== */
-    useEffect(() => {
-        return () => {
-            console.log("[CollaborativeEditor] cleanup", tabId);
-            provider?.destroy(); // сначала сеть
-            editor?.destroy(); // потом editor
-            ydoc.destroy(); // потом модель
-        };
-    }, [editor, provider, ydoc, tabId]);
-
-    /* ======================================================
-       Loading state
-    ====================================================== */
-    if (!editor || !provider) {
-        return <Loader />;
-    }
+    if (!customEditor) return <Loader />;
 
     return (
-        <div className={styles.editorWrapper}>
-            <EditorContent editor={editor} />
+        <div style={{ padding: 40, maxWidth: "1200px", margin: "0 auto" }}>
+            {/* Toolbar */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+                <button onClick={() => customEditor.chain().focus().toggleBold().run()} className={customEditor.isActive("bold") ? "active" : ""}>
+                    Bold
+                </button>
+                <button onClick={() => customEditor.chain().focus().toggleItalic().run()} className={customEditor.isActive("italic") ? "active" : ""}>
+                    Italic
+                </button>
+                <button onClick={() => customEditor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
+            </div>
+
+            {/* Статус */}
+            <div style={{ marginBottom: 15, fontSize: 14 }}>
+                <span
+                    style={{
+                        display: "inline-block",
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: connected ? "green" : "red",
+                        marginRight: 8,
+                    }}
+                />
+                {connected ? "Connected" : "Connecting..."}
+            </div>
+
+            {/* Редактор */}
+            <div className={styles.editorWrapper}>
+                <EditorContent editor={customEditor} />
+            </div>
         </div>
     );
-};
-
-export default CollaborativeEditor;
+}

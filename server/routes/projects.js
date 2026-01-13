@@ -8,6 +8,9 @@ const { hasRole } = require("../middleware/checkRole");
 
 // --- СЕРВИС
 const projectService = require("../services/projectService");
+const tabService = require("../services/tabService");
+
+const pool = require("../db");
 
 router.use(authMiddleware);
 
@@ -91,22 +94,14 @@ router.use(authMiddleware);
 // CREATE
 router.post(
     "/",
-    // 2a. Добавляем middleware для валидации
-    body("name")
-        .trim() // Убираем пробелы по краям
-        .notEmpty()
-        .withMessage("Project name cannot be empty.")
-        .isLength({ max: 100 })
-        .withMessage("Project name cannot be more than 100 characters."),
-    body("description")
-        .optional() // Делаем поле необязательным
-        .trim()
-        .isLength({ max: 500 })
-        .withMessage("Description cannot be more than 500 characters."),
+    [
+        // ✅ ВСЕ middleware в МАССИВЕ []
+        body("name").trim().notEmpty().withMessage("Project name is required").isLength({ max: 100 }).withMessage("Max 100 chars"),
+        body("description").optional().trim().isLength({ max: 500 }),
 
-    // 2b. Основной обработчик роута
+        // ✅ НЕТ запятой здесь! Обработчик после массива
+    ],
     async (req, res) => {
-        // 2c. Проверяем результат валидации
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -114,8 +109,7 @@ router.post(
 
         try {
             const userId = req.user.id;
-            const projectData = req.body;
-            const newProject = await projectService.createProject(userId, projectData);
+            const newProject = await projectService.createProject(userId, req.body);
             res.status(201).json(newProject);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -303,5 +297,41 @@ router.delete("/:id", [checkProjectAccess, hasRole(["owner"])], async (req, res)
         res.status(500).json({ error: "Failed to delete project" });
     }
 });
+
+router.get("/:projectId/tabs", checkProjectAccess, async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        const result = await pool.query(
+            `
+            SELECT id, title, type, ydoc_document_name, created_at, updated_at
+            FROM tabs 
+            WHERE project_id = $1 
+            ORDER BY created_at ASC
+        `,
+            [projectId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Tabs error:", error);
+        res.status(500).json({ error: "Failed to load tabs" });
+    }
+});
+
+router.get("/:projectId/tabs", checkProjectAccess, async (req, res) => {
+    const tabs = await tabService.getTabsForProject(req.params.projectId);
+    res.json(tabs);
+});
+
+router.post(
+    "/:projectId/tabs",
+    [checkProjectAccess, body("title").trim().notEmpty().withMessage("Title required"), body("type").isIn(["text", "board", "code", "mindmap"])],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+        const newTab = await tabService.createTab(req.user.id, req.params.projectId, req.body);
+        res.status(201).json(newTab);
+    }
+);
 
 module.exports = router;
