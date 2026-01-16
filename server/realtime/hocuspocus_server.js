@@ -45,18 +45,12 @@ const hocuspocusServer = new Server({
         }),
     ],
 
-    onConnect(documentName, data) {
-        console.log("🟢 CONNECT");
-        // console.log("🟢 CONNECT", {
-        //     documentName,
-        // });
+    onConnect({ documentName }) {
+        console.log("🟢 CONNECT", documentName);
     },
 
-    onDisconnect({ documentName, data }) {
-        console.log("🔴 DISCONNECT");
-        // console.log("🔴 DISCONNECT", {
-        //     documentName,
-        // });
+    onDisconnect({ documentName }) {
+        console.log("🔴 DISCONNECT", documentName);
     },
 
     onChange({ documentName }) {
