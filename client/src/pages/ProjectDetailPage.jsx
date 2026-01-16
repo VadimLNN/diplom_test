@@ -1,50 +1,61 @@
 // src/pages/ProjectDetailPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../shared/api/axios";
 import ProjectMembers from "../features/projects/manage-members/ui/ProjectMembers";
 import ProjectSettings from "../features/projects/settings/ui/ProjectSettings";
-import DocumentGrid from "../widgets/DocumentGrid/ui/DocumentGrid";
 import Modal from "../shared/ui/Modal/Modal";
-import CreateDocumentForm from "../features/document/create/ui/CreateDocumentForm";
+import CreateTabForm from "../features/tabs/create/ui/CreateTabForm";
+import TabGrid from "../widgets/TabGrid/ui/TabGrid";
 
-// Импортируем стили
 import pageStyles from "./PageStyles.module.css";
-import styles from "./ProjectDetailPage.module.css"; // Стили для этой страницы
+import styles from "./ProjectDetailPage.module.css";
 
 const ProjectDetailPage = () => {
     const { projectId } = useParams();
-    const [activeTab, setActiveTab] = useState("documents");
+    const [activeTab, setActiveTab] = useState("tabs");
+
+    const navigate = useNavigate();
 
     // Состояния
     const [project, setProject] = useState(null);
-    const [documents, setDocuments] = useState([]);
-    const [userRole, setUserRole] = useState(null); // Роль нам все еще нужна для UI
+    const [tabs, setTabs] = useState([]);
+    const [userRole, setUserRole] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+    const [isCreateTabModalOpen, setIsCreateTabModalOpen] = useState(false);
 
-    const [isCreateDocModalOpen, setIsCreateDocModalOpen] = useState(false);
+    const handleTabClick = (tabId) => {
+        navigate(`/projects/${projectId}/tabs/${tabId}`);
+    };
 
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
             setError("");
 
+            // ✅ 1. Проект
             const projectRes = await api.get(`/projects/${projectId}`);
             setProject(projectRes.data);
 
-            const docsRes = await api.get(`/documents/project/${projectId}`);
-            setDocuments(docsRes.data);
+            // ✅ 2. TABS вместо documents!
+            const tabsRes = await api.get(`/projects/${projectId}/tabs`);
+            setTabs(
+                tabsRes.data.map((tab) => ({
+                    ...tab,
+                    project_id: projectId,
+                }))
+            );
 
+            // ✅ 3. Роль
             try {
                 const roleRes = await api.get(`/projects/${projectId}/permissions/my-role`);
                 setUserRole(roleRes.data.role);
-            } catch (roleError) {
-                console.warn("Could not fetch user role, defaulting to 'viewer'.");
+            } catch {
                 setUserRole("viewer");
             }
         } catch (err) {
-            setError("Failed to load project data. You may not have permission.");
+            setError("Failed to load project data.");
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -55,34 +66,29 @@ const ProjectDetailPage = () => {
         fetchData();
     }, [fetchData]);
 
-    if (isLoading)
-        return (
-            <div className={pageStyles.pageContainer}>
-                <p>Loading project...</p>
-            </div>
-        );
+    const handleTabCreated = (newTab) => {
+        setTabs((prev) => [newTab, ...prev]);
+        setIsCreateTabModalOpen(false);
+    };
+
+    const handleDeleteTab = async (tabId) => {
+        if (window.confirm("Delete this tab?")) {
+            try {
+                await api.delete(`/tabs/${tabId}`);
+                setTabs((prev) => prev.filter((tab) => tab.id !== tabId));
+            } catch (err) {
+                alert("Failed to delete tab");
+            }
+        }
+    };
+
+    if (isLoading) return <div className={pageStyles.pageContainer}>Loading...</div>;
     if (error)
         return (
             <div className={pageStyles.pageContainer}>
                 <p style={{ color: "red" }}>{error}</p>
             </div>
         );
-
-    const handleDocumentCreated = (newDocument) => {
-        setDocuments((prevDocs) => [newDocument, ...prevDocs]);
-        setIsCreateDocModalOpen(false);
-    };
-
-    const handleDeleteDocument = async (documentId) => {
-        if (window.confirm("Are you sure you want to delete this document?")) {
-            try {
-                await api.delete(`/documents/${documentId}`);
-                setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== documentId));
-            } catch (err) {
-                alert(err.response?.data?.error || "Failed to delete document.");
-            }
-        }
-    };
 
     return (
         <div className={`${pageStyles.pageContainer} ${styles.editorLayout}`}>
@@ -95,42 +101,50 @@ const ProjectDetailPage = () => {
                 <p>{project.description}</p>
             </header>
 
+            {/* ✅ Tabs навигация */}
             <div className={styles.tabs}>
-                <button className={`${styles.tabButton} ${activeTab === "documents" ? styles.active : ""}`} onClick={() => setActiveTab("documents")}>
-                    Documents
+                <button className={`${styles.tabButton} ${activeTab === "tabs" ? styles.active : ""}`} onClick={() => setActiveTab("tabs")}>
+                    🖥️ Tabs ({tabs.length})
                 </button>
                 <button className={`${styles.tabButton} ${activeTab === "members" ? styles.active : ""}`} onClick={() => setActiveTab("members")}>
-                    Members
+                    👥 Members
                 </button>
                 {userRole === "owner" && (
                     <button
                         className={`${styles.tabButton} ${activeTab === "settings" ? styles.active : ""}`}
                         onClick={() => setActiveTab("settings")}
                     >
-                        Settings
+                        ⚙️ Settings
                     </button>
                 )}
             </div>
 
             <div className={styles.tabContent}>
-                {activeTab === "documents" && (
-                    <div>
-                        <DocumentGrid
-                            documents={documents}
+                {activeTab === "tabs" && (
+                    <>
+                        <div className={styles.tabsHeader}>
+                            <h3>Collaborative Workspace</h3>
+                            <button onClick={() => setIsCreateTabModalOpen(true)} className={styles.createTabButton}>
+                                + New Tab
+                            </button>
+                        </div>
+
+                        <TabGrid
+                            tabs={tabs}
+                            onCreateClick={() => setIsCreateTabModalOpen(true)}
                             userRole={userRole}
-                            onDeleteDocument={handleDeleteDocument}
-                            onCreateClick={() => setIsCreateDocModalOpen(true)}
+                            onTabClick={handleTabClick}
+                            onDeleteTab={handleDeleteTab}
                         />
-                    </div>
+                    </>
                 )}
 
                 {activeTab === "members" && <ProjectMembers projectId={projectId} userRole={userRole} />}
-
                 {activeTab === "settings" && userRole === "owner" && <ProjectSettings project={project} />}
             </div>
 
-            <Modal isOpen={isCreateDocModalOpen} onClose={() => setIsCreateDocModalOpen(false)} title="Create a New Document">
-                <CreateDocumentForm projectId={projectId} onSuccess={handleDocumentCreated} isOpen={isCreateDocModalOpen} />
+            <Modal isOpen={isCreateTabModalOpen} onClose={() => setIsCreateTabModalOpen(false)} title="Create New Tab">
+                <CreateTabForm projectId={projectId} onSuccess={handleTabCreated} />
             </Modal>
         </div>
     );

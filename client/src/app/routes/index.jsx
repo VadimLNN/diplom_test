@@ -46,7 +46,7 @@ const AppRoutes = () => (
         />
         {/* Страница редактора документа */}
         <Route
-            path="/documents/:documentId"
+            path="/projects/:projectId/tabs/:tabId"
             element={
                 <PrivateRoute>
                     <DocumentEditorPage />
