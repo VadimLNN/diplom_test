@@ -4,8 +4,7 @@ import TabCard from "../../../entities/tab/TabCard"; // ✅ Аналог Documen
 import gridStyles from "../../ProjectGrid/ui/ProjectGrid.module.css"; // ✅ Тот же стиль сетки
 import EmptyState from "../../../shared/ui/EmptyState/EmptyState";
 
-const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick, activeTabId, onCreateClick }) => {
-    // ✅ Точно как DocumentGrid!
+const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick }) => {
     if (!tabs || tabs.length === 0) {
         return (
             <EmptyState
@@ -28,7 +27,6 @@ const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick, activeTabId, onCreat
                 <TabCard
                     key={tab.id}
                     tab={tab}
-                    isActive={activeTabId === tab.id}
                     onClick={() => onTabClick(tab.id)}
                     onDelete={userRole === "owner" ? () => onDeleteTab(tab.id) : null}
                 />

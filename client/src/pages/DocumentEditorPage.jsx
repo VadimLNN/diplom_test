@@ -1,102 +1,69 @@
 // src/pages/DocumentEditorPage.jsx
-
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../shared/api/axios";
-import CollaborativeEditor from "../features/document/editor/ui/CollaborativeEditor";
+import TabEditor from "../features/tabs/editor/ui/TabEditor"; // ✅ TabEditor!
 import pageStyles from "./PageStyles.module.css";
-import styles from "./DocumentEditorPage.module.css"; // Создадим этот файл
+import styles from "./DocumentEditorPage.module.css";
 
 const DocumentEditorPage = () => {
-    // const { documentId } = useParams();
-    // const [document, setDocument] = useState(null);
-    // const [isLoading, setIsLoading] = useState(true);
-    // const [error, setError] = useState("");
-    // const [userRole, setUserRole] = useState(null);
+    const { projectId, tabId } = useParams(); // ✅ tabId!
+    const navigate = useNavigate();
 
-    // const saveTimeoutRef = useRef(null);
+    const [tab, setTab] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    // const fetchDocumentData = useCallback(async () => {
-    //     try {
-    //         setIsLoading(true);
-    //         const response = await api.get(`/documents/${documentId}`);
-    //         setDocument(response.data);
-    //         // Заодно получим роль, чтобы знать, можно ли редактировать
-    //         const roleResponse = await api.get(`/projects/${response.data.project_id}/permissions/my-role`);
-    //         setUserRole(roleResponse.data.role);
-    //     } catch (err) {
-    //         setError("Failed to load document. You may not have permission.");
-    //         console.error(err);
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // }, [documentId]);
+    useEffect(() => {
+        const fetchTab = async () => {
+            try {
+                setIsLoading(true);
+                // ✅ Загружаем конкретный tab
+                const response = await api.get(`/projects/${projectId}/tabs/${tabId}`);
+                setTab(response.data);
+            } catch (err) {
+                setError("Failed to load tab");
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    // useEffect(() => {
-    //     fetchDocumentData();
-    // }, [fetchDocumentData]);
+        if (tabId && projectId) fetchTab();
+    }, [tabId, projectId]);
 
-    // const handleSave = useCallback(async (docId, updatedContent) => {
-    //     if (saveTimeoutRef.current) {
-    //         clearTimeout(saveTimeoutRef.current);
-    //     }
+    if (isLoading) {
+        return <div className={pageStyles.pageContainer}>🔄 Loading editor...</div>;
+    }
 
-    //     saveTimeoutRef.current = setTimeout(async () => {
-    //         try {
-    //             await api.put(`/documents/${docId}`, { content: updatedContent });
-    //             console.log("Autosaved successfully!");
-    //             // Можно показать toast.success('Saved!')
-    //         } catch (error) {
-    //             console.error("Failed to autosave document:", error);
-    //         }
-    //     }, 2000); // Задержка 2 секунды
-    // }, []);
+    if (error || !tab) {
+        return (
+            <div className={pageStyles.pageContainer}>
+                <p style={{ color: "red" }}>{error || "Tab not found"}</p>
+                <Link to={`/projects/${projectId}`} className={styles.backButton}>
+                    ← Back to Project
+                </Link>
+            </div>
+        );
+    }
 
-    // if (isLoading)
-    //     return (
-    //         <div className={pageStyles.pageContainer}>
-    //             <p>Loading document...</p>
-    //         </div>
-    //     );
-    // if (error)
-    //     return (
-    //         <div className={pageStyles.pageContainer}>
-    //             <p style={{ color: "red" }}>{error}</p>
-    //         </div>
-    //     );
-    // if (!document)
-    //     return (
-    //         <div className={pageStyles.pageContainer}>
-    //             <p>Document not found</p>
-    //         </div>
-    //     );
-
-    // return (
-    //     <div className={`${pageStyles.pageContainer} ${styles.editorLayout}`}>
-    //         <header className={styles.editorHeader}>
-    //             <div className={styles.breadcrumbs}>
-    //                 <Link to="/projects">My Projects</Link> /<Link to={`/projects/${document.project_id}`}>Project</Link> /
-    //                 <span>{document.title}</span>
-    //             </div>
-    //         </header>
-
-    //         <main className={styles.editorContent}>
-    //             <CollaborativeEditor
-    //                 documentId={document.id}
-    //                 onSave={handleSave} // <-- 5. ПЕРЕДАЕМ ФУНКЦИЮ В РЕДАКТОР
-    //                 isReadOnly={userRole === "viewer"}
-    //             />
-    //         </main>
-    //     </div>
-    // );
-
-    const { projectId } = useParams();
-    const userId = getUserIdFromJWT();
-    const userName = getUserNameFromJWT();
     return (
-        <div>
-            <h1>Проект #{projectId}</h1>
-            <CollaborativeEditor projectId={projectId} userId={userId} userName={userName} />
+        <div className={`${pageStyles.pageContainer} ${styles.fullEditor}`}>
+            {/* Header */}
+            <div className={styles.header}>
+                <Link to={`/projects/${projectId}`} className={styles.backLink}>
+                    ← {tab.project_name || "Project"}
+                </Link>
+                <div>
+                    <h1>{tab.title}</h1>
+                    <span>🟢 Real-time collaboration</span>
+                </div>
+            </div>
+
+            {/* ✅ TabEditor — 100% рабочий! */}
+            <div className={styles.editorContainer}>
+                <TabEditor tab={tab} />
+            </div>
         </div>
     );
 };

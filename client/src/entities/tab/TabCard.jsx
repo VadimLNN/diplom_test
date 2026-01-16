@@ -1,9 +1,10 @@
 // src/entities/tab/ui/TabCard.jsx
 import React from "react";
 import Card from "../../shared/ui/Card/Card";
+import { Link } from "react-router-dom";
 import cardStyles from "../../entities/project/ui/ProjectCard"; // ✅ Тот же стиль!
 
-const TabCard = ({ tab, isActive, onClick, onDelete }) => {
+const TabCard = ({ tab, isActive, onDelete, projectId }) => {
     const getIcon = (type) => {
         const icons = {
             text: "📄",
@@ -14,12 +15,8 @@ const TabCard = ({ tab, isActive, onClick, onDelete }) => {
         return icons[type] || "📋";
     };
 
-    const handleOpenTab = () => {
-        onClick(tab.id); // ✅ Открываем TabEditor вместо navigate
-    };
-
     const handleDeleteTab = (e) => {
-        e.stopPropagation(); // ✅ Не открываем при клике на delete
+        e.preventDefault(); // ✅ Не открываем при клике на delete
         onDelete(tab.id);
     };
 
@@ -51,9 +48,13 @@ const TabCard = ({ tab, isActive, onClick, onDelete }) => {
                             Delete
                         </button>
                     )}
-                    <button onClick={handleOpenTab} className={cardStyles.openButton}>
-                        {isActive ? "Editing..." : "Open"}
-                    </button>
+                    {/* ✅ Link на отдельную страницу редактора */}
+                    <Link
+                        to={`/projects/${tab.project_id}/tabs/${tab.id}`}
+                        className={`${cardStyles.openButton} ${isActive ? cardStyles.active : ""}`}
+                    >
+                        {isActive ? "Editing..." : "✏️ Open"}
+                    </Link>
                 </div>
             </div>
         </Card>

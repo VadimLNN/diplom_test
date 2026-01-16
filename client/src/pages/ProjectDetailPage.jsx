@@ -1,12 +1,11 @@
 // src/pages/ProjectDetailPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../shared/api/axios";
 import ProjectMembers from "../features/projects/manage-members/ui/ProjectMembers";
 import ProjectSettings from "../features/projects/settings/ui/ProjectSettings";
 import Modal from "../shared/ui/Modal/Modal";
 import CreateTabForm from "../features/tabs/create/ui/CreateTabForm";
-import TabEditor from "../features/tabs/editor/ui/TabEditor";
 import TabGrid from "../widgets/TabGrid/ui/TabGrid";
 
 import pageStyles from "./PageStyles.module.css";
@@ -16,6 +15,8 @@ const ProjectDetailPage = () => {
     const { projectId } = useParams();
     const [activeTab, setActiveTab] = useState("tabs");
 
+    const navigate = useNavigate();
+
     // Состояния
     const [project, setProject] = useState(null);
     const [tabs, setTabs] = useState([]);
@@ -23,7 +24,10 @@ const ProjectDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [isCreateTabModalOpen, setIsCreateTabModalOpen] = useState(false);
-    const [activeTabId, setActiveTabId] = useState(null);
+
+    const handleTabClick = (tabId) => {
+        navigate(`/projects/${projectId}/tabs/${tabId}`);
+    };
 
     const fetchData = useCallback(async () => {
         try {
@@ -36,11 +40,14 @@ const ProjectDetailPage = () => {
 
             // ✅ 2. TABS вместо documents!
             const tabsRes = await api.get(`/projects/${projectId}/tabs`);
-            setTabs(tabsRes.data);
+            setTabs(
+                tabsRes.data.map((tab) => ({
+                    ...tab,
+                    project_id: projectId,
+                }))
+            );
 
-            if (tabsRes.data.length > 0) {
-                setActiveTabId(tabsRes.data[0].id);
-            }
+            console.log(tabsRes.data);
 
             // ✅ 3. Роль
             try {
@@ -63,7 +70,6 @@ const ProjectDetailPage = () => {
 
     const handleTabCreated = (newTab) => {
         setTabs((prev) => [newTab, ...prev]);
-        setActiveTabId(newTab.id);
         setIsCreateTabModalOpen(false);
     };
 
@@ -72,9 +78,6 @@ const ProjectDetailPage = () => {
             try {
                 await api.delete(`/tabs/${tabId}`);
                 setTabs((prev) => prev.filter((tab) => tab.id !== tabId));
-                if (activeTabId === tabId) {
-                    setActiveTabId(null);
-                }
             } catch (err) {
                 alert("Failed to delete tab");
             }
@@ -117,12 +120,7 @@ const ProjectDetailPage = () => {
                     </button>
                 )}
             </div>
-            {/* ✅ TabEditor для активной вкладки */}
-            {activeTabId && (
-                <div className={styles.tabEditorContainer}>
-                    <TabEditor tab={tabs.find((t) => t.id === activeTabId)} userName="User" />
-                </div>
-            )}
+
             <div className={styles.tabContent}>
                 {activeTab === "tabs" && (
                     <>
@@ -135,10 +133,10 @@ const ProjectDetailPage = () => {
 
                         <TabGrid
                             tabs={tabs}
+                            onCreateClick={() => setIsCreateTabModalOpen(true)}
                             userRole={userRole}
+                            onTabClick={handleTabClick}
                             onDeleteTab={handleDeleteTab}
-                            onTabClick={setActiveTabId}
-                            activeTabId={activeTabId}
                         />
                     </>
                 )}
@@ -147,7 +145,6 @@ const ProjectDetailPage = () => {
                 {activeTab === "settings" && userRole === "owner" && <ProjectSettings project={project} />}
             </div>
 
-            {/* ✅ Только модалка Tabs */}
             <Modal isOpen={isCreateTabModalOpen} onClose={() => setIsCreateTabModalOpen(false)} title="Create New Tab">
                 <CreateTabForm projectId={projectId} onSuccess={handleTabCreated} />
             </Modal>
