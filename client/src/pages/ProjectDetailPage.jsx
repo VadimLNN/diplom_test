@@ -47,8 +47,6 @@ const ProjectDetailPage = () => {
                 }))
             );
 
-            console.log(tabsRes.data);
-
             // ✅ 3. Роль
             try {
                 const roleRes = await api.get(`/projects/${projectId}/permissions/my-role`);

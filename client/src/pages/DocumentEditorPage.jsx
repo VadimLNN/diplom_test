@@ -56,7 +56,6 @@ const DocumentEditorPage = () => {
                 </Link>
                 <div>
                     <h1>{tab.title}</h1>
-                    <span>🟢 Real-time collaboration</span>
                 </div>
             </div>
 
