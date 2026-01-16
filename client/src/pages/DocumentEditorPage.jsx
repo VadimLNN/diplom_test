@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../shared/api/axios";
-import TabEditor from "../features/tabs/editor/ui/TabEditor"; // ✅ TabEditor!
+import TextEditor from "../features/tabs/editor/ui/TextEditor"; // ✅ TabEditor!
 import pageStyles from "./PageStyles.module.css";
 import styles from "./DocumentEditorPage.module.css";
 
@@ -61,7 +61,7 @@ const DocumentEditorPage = () => {
 
             {/* ✅ TabEditor — 100% рабочий! */}
             <div className={styles.editorContainer}>
-                <TabEditor tab={tab} />
+                <TextEditor tab={tab} />
             </div>
         </div>
     );

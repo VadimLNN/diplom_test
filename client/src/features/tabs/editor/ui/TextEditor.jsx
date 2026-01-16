@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import { HocuspocusProvider } from "@hocuspocus/provider";
-import styles from "./CollaborativeEditor.module.css";
+import styles from "./TextEditor.module.css";
 
 const providerCache = new Map();
 
@@ -21,7 +21,7 @@ function getProvider(tabId, docName) {
     return providerCache.get(tabId);
 }
 
-const TabEditor = ({ tab }) => {
+const TextEditor = ({ tab }) => {
     const [connected, setConnected] = useState(false);
 
     const provider = useMemo(() => {
@@ -84,4 +84,4 @@ const TabEditor = ({ tab }) => {
     );
 };
 
-export default TabEditor;
+export default TextEditor;
