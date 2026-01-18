@@ -1,0 +1,140 @@
+/* ===== Root ===== */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--editor-toolbar-bg, #1e1e1e);
+}
+
+/* ===== Buttons ===== */
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+
+    padding: 6px 8px;
+    cursor: pointer;
+
+    color: inherit;
+}
+
+.button:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.buttonActive {
+    background: rgba(79, 70, 229, 0.14);
+}
+
+/* ===== Toggle Group ===== */
+
+.toggleGroup {
+    display: inline-flex;
+    gap: 4px;
+}
+
+/* ===== Icons & text ===== */
+
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 600;
+    line-height: 1;
+    font-size: 14px;
+}
+
+.dropdownArrow {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.buttonText {
+    font-size: 12px;
+}
+
+/* ===== Separator ===== */
+
+.separator {
+    width: 1px;
+    height: 24px;
+    margin: 0 4px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+/* ===== Dropdown ===== */
+
+.dropdown {
+    min-width: 160px;
+
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+
+    padding: 6px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.dropdownItem {
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.dropdownItem:hover:not([data-disabled]) {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.dropdownItemActive {
+    background: rgba(79, 70, 229, 0.14);
+}
+
+.dropdownItem[data-disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ===== Tooltip ===== */
+
+.tooltip {
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* ===== Theme hooks (optional) ===== */
+
+:global(.dark) .toolbar {
+    --editor-toolbar-bg: #111;
+}
+
+:global(.dark) .dropdown {
+    background: #1a1a1a;
+    color: #fff;
+}
+
+:global(.dark) .button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark) .separator {
+    background: rgba(255, 255, 255, 0.18);
+}
