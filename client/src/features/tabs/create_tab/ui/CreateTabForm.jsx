@@ -52,7 +52,6 @@ const CreateTabForm = ({ projectId, onSuccess, isOpen }) => {
                 <option value="text">📄 Text Document</option>
                 <option value="board">🎨 Drawing Board</option>
                 <option value="code">💻 Code Editor</option>
-                <option value="mindmap">🧠 Mind Map</option>
             </select>
 
             <button type="submit" className={`${formStyles.button} ${formStyles.primaryButton}`}>

@@ -5,7 +5,7 @@ import api from "../shared/api/axios";
 import ProjectMembers from "../features/projects/manage-members/ui/ProjectMembers";
 import ProjectSettings from "../features/projects/settings/ui/ProjectSettings";
 import Modal from "../shared/ui/Modal/Modal";
-import CreateTabForm from "../features/tabs/create/ui/CreateTabForm";
+import CreateTabForm from "../features/tabs/create_tab/ui/CreateTabForm";
 import TabGrid from "../widgets/TabGrid/ui/TabGrid";
 
 import pageStyles from "./PageStyles.module.css";
@@ -44,7 +44,7 @@ const ProjectDetailPage = () => {
                 tabsRes.data.map((tab) => ({
                     ...tab,
                     project_id: projectId,
-                }))
+                })),
             );
 
             // ✅ 3. Роль
