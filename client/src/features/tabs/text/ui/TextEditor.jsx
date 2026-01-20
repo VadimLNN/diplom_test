@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import styles from "./TextEditor.module.css";
+import EditorToolbar from "./EditorToolbar";
 
 const providerCache = new Map();
 
@@ -70,13 +71,8 @@ const TextEditor = ({ tab }) => {
 
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <h2>
-                    {tab.title}{" "}
-                    <span className={connected ? styles.connected : styles.disconnected}>{connected ? "🟢 Connected" : "🔴 Disconnected"}</span>
-                </h2>
-            </div>
-
+            <span className={connected ? styles.connected : styles.disconnected}>{connected ? "🟢 Connected" : "🔴 Disconnected"}</span>
+            <EditorToolbar editor={editor} />
             <div className={styles.editor}>
                 <EditorContent editor={editor} />
             </div>
