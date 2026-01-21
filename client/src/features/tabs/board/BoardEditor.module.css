@@ -1,0 +1,12 @@
+.container {
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+}
+
+.board {
+    flex: 1;
+    padding-top: 10px;
+    min-height: 0; /* 🔥 ВАЖНО для flex */
+    overflow: hidden;
+}
