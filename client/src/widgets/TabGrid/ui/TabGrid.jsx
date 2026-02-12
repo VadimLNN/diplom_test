@@ -12,11 +12,7 @@ const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick }) => {
                 title="No Tabs in This Project"
                 message="Collaborative tabs let you work together in real-time. Create one to get started!"
             >
-                {(userRole === "owner" || userRole === "editor") && (
-                    <button onClick={onCreateClick} className="btn-primary">
-                        + Create a New Tab
-                    </button>
-                )}
+                {(userRole === "owner" || userRole === "editor") && <button className="btn-primary">+ Create a New Tab</button>}
             </EmptyState>
         );
     }
