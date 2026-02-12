@@ -19,23 +19,23 @@ const tabsRoutes = require("./routes/tabs");
 const app = express();
 const server = http.createServer(app);
 
-// const expressWs = require("express-ws");
-// expressWs(app, server);
+const allowedOrigins = ["http://localhost:3000", process.env.CLIENT_URL];
 
 // 5. Middleware для Express
 app.use(express.json());
 app.use(
     cors({
-        origin: "http://localhost:3000",
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
         exposedHeaders: ["Authorization"],
-    })
+    }),
 );
-
-// const hocuspocusServer = require("./realtime/hocuspocus_server");
-// app.ws("/api/collab", (ws, req) => {
-//     hocuspocusServer.handleConnection(ws, req);
-// });
 
 app.use("/api/auth/login", loginLimiter);
 

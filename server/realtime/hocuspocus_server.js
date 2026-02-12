@@ -4,7 +4,7 @@ const { Database } = require("@hocuspocus/extension-database");
 const pool = require("../db");
 
 const hocuspocusServer = new Server({
-    port: 1234,
+    port: null,
     path: "/api/collab",
 
     extensions: [
@@ -37,7 +37,7 @@ const hocuspocusServer = new Server({
                     ON CONFLICT (ydoc_document_name)
                     DO UPDATE SET ydoc_data = $2, updated_at = NOW()
                     `,
-                    [documentName, Buffer.from(state)]
+                    [documentName, Buffer.from(state)],
                 );
 
                 console.log("💾 Stored Yjs doc:", documentName, state.length);

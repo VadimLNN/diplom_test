@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Создаем инстанс axios с базовым URL
 const api = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
 // Создаем перехватчик (interceptor) для всех исходящих запросов
@@ -22,7 +22,7 @@ api.interceptors.request.use(
     (error) => {
         // Если при настройке запроса произошла ошибка, отклоняем Promise
         return Promise.reject(error);
-    }
+    },
 );
 
 export default api;
