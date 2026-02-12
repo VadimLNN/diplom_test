@@ -129,13 +129,7 @@ const ProjectDetailPage = () => {
                             </button>
                         </div>
 
-                        <TabGrid
-                            tabs={tabs}
-                            onCreateClick={() => setIsCreateTabModalOpen(true)}
-                            userRole={userRole}
-                            onTabClick={handleTabClick}
-                            onDeleteTab={handleDeleteTab}
-                        />
+                        <TabGrid tabs={tabs} userRole={userRole} onTabClick={handleTabClick} onDeleteTab={handleDeleteTab} />
                     </>
                 )}
 
