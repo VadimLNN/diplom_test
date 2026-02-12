@@ -4,7 +4,7 @@ import TabCard from "../../../entities/tab/TabCard"; // ✅ Аналог Documen
 import gridStyles from "../../ProjectGrid/ui/ProjectGrid.module.css"; // ✅ Тот же стиль сетки
 import EmptyState from "../../../shared/ui/EmptyState/EmptyState";
 
-const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick }) => {
+const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick, onCreateClick }) => {
     if (!tabs || tabs.length === 0) {
         return (
             <EmptyState
@@ -12,7 +12,11 @@ const TabGrid = ({ tabs, userRole, onDeleteTab, onTabClick }) => {
                 title="No Tabs in This Project"
                 message="Collaborative tabs let you work together in real-time. Create one to get started!"
             >
-                {(userRole === "owner" || userRole === "editor") && <button className="btn-primary">+ Create a New Tab</button>}
+                {(userRole === "owner" || userRole === "editor") && (
+                    <button onClick={onCreateClick} className="btn-primary">
+                        + Create a New Tab
+                    </button>
+                )}
             </EmptyState>
         );
     }
