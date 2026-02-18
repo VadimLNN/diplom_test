@@ -13,7 +13,7 @@ const providerCache = new Map();
 function getProvider(tabId, docName) {
     if (!providerCache.has(tabId)) {
         const provider = new HocuspocusProvider({
-            url: "ws://localhost:1234/api/collab",
+            url: import.meta.env.VITE_WS_URL,
             name: docName,
         });
         providerCache.set(tabId, provider);
